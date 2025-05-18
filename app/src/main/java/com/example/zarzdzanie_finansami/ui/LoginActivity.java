@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.zarzdzanie_finansami.MainActivity;
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
 import com.example.zarzdzanie_finansami.dto.LogowanieRequest;
@@ -46,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // Jeśli użytkownik jest już zalogowany, przenieś go dalej
         if (tokenManager.hasToken()) {
-            startActivity(new Intent(LoginActivity.this, KontaActivity.class));
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
         }
 
@@ -74,7 +75,7 @@ public class LoginActivity extends AppCompatActivity {
                     Toast.makeText(LoginActivity.this, "Zalogowano pomyślnie: " + loginResponse.getNazwa(), Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "Token: " + loginResponse.getToken());
                     // Przejdź do następnej aktywności
-                    startActivity(new Intent(LoginActivity.this, KontaActivity.class));
+                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
                     finish();
                 } else {
                     // Obsługa błędu logowania (np. nieprawidłowe dane, błąd serwera)

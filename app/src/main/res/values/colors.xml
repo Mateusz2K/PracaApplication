@@ -2,4 +2,6 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="green_profit">#58D316</color>
+    <color name="red_loss">#F44336</color>
 </resources>
