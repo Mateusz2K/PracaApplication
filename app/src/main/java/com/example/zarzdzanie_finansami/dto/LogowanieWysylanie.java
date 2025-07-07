@@ -2,13 +2,13 @@ package com.example.zarzdzanie_finansami.dto;
 
 import com.google.gson.annotations.SerializedName;
 
-public class LogowanieRequest {
+public class LogowanieWysylanie {
     @SerializedName("nazwa")
     private String nazwa;
     @SerializedName("hasło")
     private String hasło;
 
-    public LogowanieRequest(String nazwa, String hasło) {
+    public LogowanieWysylanie(String nazwa, String hasło) {
         this.hasło = hasło;
         this.nazwa = nazwa;
     }

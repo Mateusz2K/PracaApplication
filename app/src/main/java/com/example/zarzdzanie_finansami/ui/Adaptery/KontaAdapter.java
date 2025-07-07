@@ -10,27 +10,27 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
-import com.example.zarzdzanie_finansami.dto.KontoResponse;
-import java.math.BigDecimal;
+import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
+
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
 public class KontaAdapter extends RecyclerView.Adapter<KontaAdapter.KontoViewHolder> {
 
-    private List<KontoResponse> kontoList;
+    private List<KontoOdpowiedz> kontoList;
     private final OnKontoInteractionListener listener;
     private final Context context;
-    private NumberFormat currencyFormatter;
+    private final NumberFormat currencyFormatter;
 
 
     public interface OnKontoInteractionListener {
-        void onModifyKontoClicked(KontoResponse konto);
-        void onShowTransactionHistoryClicked(KontoResponse konto);
-        void onDeleteKontoClicked(KontoResponse konto, int position); // Dodana opcja usuwania
+        void onModifyKontoClicked(KontoOdpowiedz konto);
+        void onShowTransactionHistoryClicked(KontoOdpowiedz konto);
+        void onDeleteKontoClicked(KontoOdpowiedz konto, int position); // Dodana opcja usuwania
     }
 
-    public KontaAdapter(Context context, List<KontoResponse> kontoList, OnKontoInteractionListener listener) {
+    public KontaAdapter(Context context, List<KontoOdpowiedz> kontoList, OnKontoInteractionListener listener) {
         this.context = context;
         this.kontoList = kontoList;
         this.listener = listener;
@@ -47,7 +47,7 @@ public class KontaAdapter extends RecyclerView.Adapter<KontaAdapter.KontoViewHol
 
     @Override
     public void onBindViewHolder(@NonNull KontoViewHolder holder, int position) {
-        KontoResponse currentKonto = kontoList.get(position);
+        KontoOdpowiedz currentKonto = kontoList.get(position);
 
         holder.textViewKontoNazwa.setText(currentKonto.getNazwa());
         holder.textViewKontoTyp.setText("Typ: " + currentKonto.getTyp());
@@ -69,7 +69,7 @@ public class KontaAdapter extends RecyclerView.Adapter<KontaAdapter.KontoViewHol
         holder.buttonKontoOptions.setOnClickListener(v -> showPopupMenu(holder.buttonKontoOptions, currentKonto, position));
     }
 
-    private void showPopupMenu(View view, KontoResponse konto, int position) {
+    private void showPopupMenu(View view, KontoOdpowiedz konto, int position) {
         PopupMenu popup = new PopupMenu(context, view);
         popup.inflate(R.menu.menu_konto_options); // Utworzymy ten plik menu poniżej
         popup.setOnMenuItemClickListener(item -> {
@@ -95,7 +95,7 @@ public class KontaAdapter extends RecyclerView.Adapter<KontaAdapter.KontoViewHol
         return kontoList == null ? 0 : kontoList.size();
     }
 
-    public void setKonta(List<KontoResponse> konta) {
+    public void setKonta(List<KontoOdpowiedz> konta) {
         this.kontoList = konta;
         notifyDataSetChanged(); // Dla prostoty, można użyć DiffUtil dla lepszej wydajności
     }
@@ -107,7 +107,7 @@ public class KontaAdapter extends RecyclerView.Adapter<KontaAdapter.KontoViewHol
         }
     }
 
-    public void updateKonto(KontoResponse updatedKonto) {
+    public void updateKonto(KontoOdpowiedz updatedKonto) {
         for (int i = 0; i < kontoList.size(); i++) {
             if (kontoList.get(i).getId() == updatedKonto.getId()) {
                 kontoList.set(i, updatedKonto);

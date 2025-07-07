@@ -2,7 +2,7 @@ package com.example.zarzdzanie_finansami.dto;
 
 import com.google.gson.annotations.SerializedName;
 
-public class LogowanieResponse {
+public class LogowanieOdpowiedz {
     @SerializedName("token") // Użyj @SerializedName jeśli nazwy pól w JSON różnią się od nazw pól w klasie
     private String token;
 

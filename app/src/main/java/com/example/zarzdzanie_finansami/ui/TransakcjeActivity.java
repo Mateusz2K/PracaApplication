@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.TransakcjaResponse; // Upewnij się, że ta klasa istnieje i ma pola
+import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz; // Upewnij się, że ta klasa istnieje i ma pola
 import com.example.zarzdzanie_finansami.network.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
 import com.example.zarzdzanie_finansami.ui.Adaptery.TransakcjeAdapter;
@@ -34,7 +34,7 @@ public class TransakcjeActivity extends AppCompatActivity implements TransakcjeA
     private ApiSerwis apiService;
     private TokenMenadzer tokenManager;
     private TransakcjeAdapter transactionsAdapter;
-    private List<TransakcjaResponse> transactionList = new ArrayList<>();
+    private List<TransakcjaOdpowiedz> transactionList = new ArrayList<>();
     private int kontoId; // ID konta, dla którego wyświetlamy transakcje
 
 
@@ -102,10 +102,10 @@ public class TransakcjeActivity extends AppCompatActivity implements TransakcjeA
         }
 
         // Założenie: W ApiSerwis masz metodę getTransakcjeDlaKonta(token, kontoId)
-        Call<List<TransakcjaResponse>> call = apiService.getTransakcjeDlaKonta("Bearer " + token, kontoId);
-        call.enqueue(new Callback<List<TransakcjaResponse>>() {
+        Call<List<TransakcjaOdpowiedz>> call = apiService.getTransakcjeDlaKonta("Bearer " + token, kontoId);
+        call.enqueue(new Callback<List<TransakcjaOdpowiedz>>() {
             @Override
-            public void onResponse(Call<List<TransakcjaResponse>> call, Response<List<TransakcjaResponse>> response) {
+            public void onResponse(Call<List<TransakcjaOdpowiedz>> call, Response<List<TransakcjaOdpowiedz>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     transactionList.clear();
                     transactionList.addAll(response.body());
@@ -130,7 +130,7 @@ public class TransakcjeActivity extends AppCompatActivity implements TransakcjeA
             }
 
             @Override
-            public void onFailure(Call<List<TransakcjaResponse>> call, Throwable t) {
+            public void onFailure(Call<List<TransakcjaOdpowiedz>> call, Throwable t) {
                 Log.e(TAG, "Błąd sieci przy pobieraniu transakcji", t);
                 Toast.makeText(TransakcjeActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
@@ -138,7 +138,7 @@ public class TransakcjeActivity extends AppCompatActivity implements TransakcjeA
     }
 
     @Override
-    public void onModifyClick(TransakcjaResponse transakcja) {
+    public void onModifyClick(TransakcjaOdpowiedz transakcja) {
         // Tutaj logika otwierania nowej aktywności/dialogu do modyfikacji transakcji
         // Np. Intent intent = new Intent(this, ModifyTransactionActivity.class);
         // intent.putExtra("TRANSACTION_ID", transakcja.getId()); // Przekaż ID transakcji
@@ -199,7 +199,7 @@ public class TransakcjeActivity extends AppCompatActivity implements TransakcjeA
     }
 
     private void redirectToLogin() {
-        Intent intent = new Intent(TransakcjeActivity.this, LoginActivity.class);
+        Intent intent = new Intent(TransakcjeActivity.this, LogowanieActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

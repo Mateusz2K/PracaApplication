@@ -41,7 +41,7 @@
             android:id="@+id/textViewTransactionType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Typ: Wydatek"
+            android:text="Typ: Koszt"
             android:textAppearance="?attr/textAppearanceListItemSecondary" />
 
         <LinearLayout

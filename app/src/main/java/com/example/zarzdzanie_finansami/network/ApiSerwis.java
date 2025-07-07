@@ -1,12 +1,13 @@
 package com.example.zarzdzanie_finansami.network;
 
 
-import com.example.zarzdzanie_finansami.dto.KontoRequest;
-import com.example.zarzdzanie_finansami.dto.KontoResponse;
-import com.example.zarzdzanie_finansami.dto.LogowanieRequest;
-import com.example.zarzdzanie_finansami.dto.LogowanieResponse;
-import com.example.zarzdzanie_finansami.dto.TransakcjaRequest;
-import com.example.zarzdzanie_finansami.dto.TransakcjaResponse;
+import com.example.zarzdzanie_finansami.dto.KategoriaOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.KontoWysylanie;
+import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.LogowanieWysylanie;
+import com.example.zarzdzanie_finansami.dto.LogowanieOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.TransakcjaWysylanie;
+import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz;
 
 import java.util.List;
 import retrofit2.http.Body;
@@ -17,35 +18,36 @@ import retrofit2.http.POST;
 import retrofit2.Call;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiSerwis {
     @POST("api/auth/login")
-    Call<LogowanieResponse> loginUser(@Body LogowanieRequest loginRequest);
+    Call<LogowanieOdpowiedz> loginUser(@Body LogowanieWysylanie loginRequest);
 
     @GET("api/konta")
-    Call<List<KontoResponse>> getMojeKonta(@Header("Authorization") String authToken);
+    Call<List<KontoOdpowiedz>> getMojeKonta(@Header("Authorization") String authToken);
 
     // Tutaj możesz dodać inne endpointy, np.
     @GET("api/konta/{id}")
-    Call<KontoResponse> getKontoById(@Header("Authorization") String authToken, @Path("id") int kontoId);
+    Call<KontoOdpowiedz> getKontoById(@Header("Authorization") String authToken, @Path("id") int kontoId);
 
     // Pobieranie transakcji dla konkretnego konta
-    @GET("api/transakcje/konto/{kontoId}")
-    Call<List<TransakcjaResponse>> getTransakcjeDlaKonta(
+    @GET("api/konta/{kontoId}/transakcje")
+    Call<List<TransakcjaOdpowiedz>> getTransakcjeDlaKonta(
             @Header("Authorization") String authToken,
             @Path("kontoId") int kontoId
     );
     @POST("api/konta")
-    Call<KontoResponse> addKonto(
+    Call<KontoOdpowiedz> addKonto(
             @Header("Authorization") String authToken,
-            @Body KontoRequest kontoRequest
+            @Body KontoWysylanie kontoWysylanie
     );
 
     @PUT("api/konta/{kontoId}")
-    Call<KontoResponse> updateKonto(
+    Call<KontoOdpowiedz> updateKonto(
             @Header("Authorization") String authToken,
             @Path("kontoId") int kontoId,
-            @Body KontoRequest kontoRequest
+            @Body KontoWysylanie kontoWysylanie
     );
 
     @DELETE("api/konta/{kontoId}")
@@ -56,24 +58,25 @@ public interface ApiSerwis {
 
     // Pobieranie pojedynczej transakcji (jeśli potrzebne)
     @GET("api/transakcje/{transakcjaId}")
-    Call<TransakcjaResponse> getTransakcjaById(
+    Call<TransakcjaOdpowiedz> getTransakcjaById(
             @Header("Authorization") String authToken,
             @Path("transakcjaId") int transakcjaId
     );
 
     // Dodawanie nowej transakcji
-    @POST("api/transakcje")
-    Call<TransakcjaResponse> dodajTransakcje(
+    @POST("api/konta/{kontoId}/transakcje")
+    Call<TransakcjaOdpowiedz> dodajTransakcje(
             @Header("Authorization") String authToken,
-            @Body TransakcjaRequest transakcjaRequest // Potrzebujesz DTO TransakcjaRequest
+            @Path("kontoId") int kontoId,
+            @Body TransakcjaWysylanie transakcjaWysylanie // Potrzebujesz DTO TransakcjaRequest
     );
 
     // Modyfikacja transakcji
     @PUT("api/transakcje/{transakcjaId}")
-    Call<TransakcjaResponse> modyfikujTransakcje(
+    Call<TransakcjaOdpowiedz> modyfikujTransakcje(
             @Header("Authorization") String authToken,
             @Path("transakcjaId") int transakcjaId,
-            @Body TransakcjaRequest transakcjaRequest // Potrzebujesz DTO TransakcjaRequest
+            @Body TransakcjaWysylanie transakcjaWysylanie // Potrzebujesz DTO TransakcjaRequest
     );
 
     // Usuwanie transakcji
@@ -82,5 +85,18 @@ public interface ApiSerwis {
             @Header("Authorization") String authToken,
             @Path("transakcjaId") int transakcjaId
     );
+    // Pobieranie transakcji dla konkretnego konta (ISTNIEJĄCA - może pozostać lub być usunięta jeśli nie jest już potrzebna)
+
+    // NOWA METODA: Pobieranie transakcji dla konkretnego konta i okresu
+    @GET("api/konta/{kontoId}/transakcje/okres") // Upewnij się, że ścieżka jest poprawna
+    Call<List<TransakcjaOdpowiedz>> getTransakcjeDlaOkresu(
+            @Header("Authorization") String authToken,
+            @Path("kontoId") int kontoId,
+            @Query("dataOd") String dataOd,     // Parametr zapytania dla daty początkowej
+            @Query("dataDo") String dataDo        // Parametr zapytania dla daty końcowej
+    );
+    //kategorie
+    @GET("api/kategorie")
+    Call<List<KategoriaOdpowiedz>> getKategorie(@Header("Authorization") String authToken);
 
 }

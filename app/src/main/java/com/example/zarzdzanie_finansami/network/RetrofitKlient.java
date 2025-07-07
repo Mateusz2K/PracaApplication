@@ -8,7 +8,7 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitKlient {
-    private static final String BASE_URL = "http://10.0.2.2:8081/";
+    private static final String BASE_URL = "http://192.168.8.101:8081/";
 
     private static Retrofit retrofit = null;
 
@@ -22,14 +22,14 @@ public class RetrofitKlient {
                     .addInterceptor(loggingInterceptor) // Dodaj interceptor
                     .build();
 
-            // Konfiguracja Gson (jeśli potrzebujesz specjalnego formatowania daty itp.)
+            // Konfiguracja Gson
             Gson gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss") // Przykładowy format daty
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss") //TODO: poprawic na polską date
             .create();
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
-                    .client(client) // Ustaw niestandardowego klienta OkHttp
+                    .client(client)
                     .addConverterFactory(GsonConverterFactory.create()) // Użyj domyślnego Gson
                     .build();
         }

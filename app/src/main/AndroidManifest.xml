@@ -14,7 +14,7 @@
         android:theme="@style/Theme.Zarządzanie_Finansami" android:usesCleartextTraffic="true"  tools:targetApi="31">
 
         <activity
-            android:name=".ui.LoginActivity" android:exported="true">
+            android:name=".ui.LogowanieActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -22,7 +22,24 @@
         </activity>
 
         <activity
-            android:name=".ui.KontaActivity" />
-        <activity android:name=".ui.TransakcjeActivity"/>
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.KontaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.TransakcjeActivity"
+            android:exported="false"/>
+
+        <activity
+            android:name=".ui.DodajTransakcjeActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+
     </application>
 </manifest>

@@ -3,7 +3,6 @@ package com.example.zarzdzanie_finansami.ui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -13,8 +12,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.zarzdzanie_finansami.MainActivity;
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.LogowanieRequest;
-import com.example.zarzdzanie_finansami.dto.LogowanieResponse;
+import com.example.zarzdzanie_finansami.dto.LogowanieWysylanie;
+import com.example.zarzdzanie_finansami.dto.LogowanieOdpowiedz;
 import com.example.zarzdzanie_finansami.network.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
 
@@ -24,7 +23,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class LoginActivity extends AppCompatActivity {
+public class LogowanieActivity extends AppCompatActivity {
 
     private EditText editTextUsername;
     private EditText editTextPassword;
@@ -36,18 +35,25 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login); // Załóżmy, że masz taki layout
+        setContentView(R.layout.activity_login);
 
-        editTextUsername = findViewById(R.id.editTextUsername); // ID z Twojego layoutu
-        editTextPassword = findViewById(R.id.editTextPassword); // ID z Twojego layoutu
-        buttonLogin = findViewById(R.id.buttonLogin);       // ID z Twojego layoutu
+        editTextUsername = findViewById(R.id.editTextUsername);
+        editTextPassword = findViewById(R.id.editTextPassword);
+        buttonLogin = findViewById(R.id.buttonLogin);
 
         apiService = RetrofitKlient.getClient().create(ApiSerwis.class);
-        tokenManager = new TokenMenadzer(this);
+        tokenManager = new TokenMenadzer(this); // Inicjalizacja tokenManagera
 
-        // Jeśli użytkownik jest już zalogowany, przenieś go dalej
+        // Sprawdź, czy sesja wygasła PRZED sprawdzeniem, czy token istnieje
+        if (tokenManager.hasToken() && tokenManager.isSessionExpired()) {
+            tokenManager.clearAuthToken(); // Wyczyść token, jeśli sesja wygasła
+            Toast.makeText(this, "Sesja wygasła. Zaloguj się ponownie.", Toast.LENGTH_SHORT).show();
+        }
+
         if (tokenManager.hasToken()) {
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            // Jeśli token nadal istnieje (i sesja nie wygasła), przejdź dalej
+            tokenManager.updateLastActiveTime(); // Zaktualizuj czas aktywności
+            startActivity(new Intent(LogowanieActivity.this, MainActivity.class));
             finish();
         }
 
@@ -63,19 +69,19 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        LogowanieRequest loginRequest = new LogowanieRequest(username, password);
-        Call<LogowanieResponse> call = apiService.loginUser(loginRequest);
+        LogowanieWysylanie loginRequest = new LogowanieWysylanie(username, password);
+        Call<LogowanieOdpowiedz> call = apiService.loginUser(loginRequest);
 
-        call.enqueue(new Callback<LogowanieResponse>() {
+        call.enqueue(new Callback<LogowanieOdpowiedz>() {
             @Override
-            public void onResponse(Call<LogowanieResponse> call, Response<LogowanieResponse> response) {
+            public void onResponse(Call<LogowanieOdpowiedz> call, Response<LogowanieOdpowiedz> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    LogowanieResponse loginResponse = response.body();
+                    LogowanieOdpowiedz loginResponse = response.body();
                     tokenManager.saveAuthToken(loginResponse.getToken());
-                    Toast.makeText(LoginActivity.this, "Zalogowano pomyślnie: " + loginResponse.getNazwa(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LogowanieActivity.this, "Zalogowano pomyślnie: " + loginResponse.getNazwa(), Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "Token: " + loginResponse.getToken());
                     // Przejdź do następnej aktywności
-                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                    startActivity(new Intent(LogowanieActivity.this, MainActivity.class));
                     finish();
                 } else {
                     // Obsługa błędu logowania (np. nieprawidłowe dane, błąd serwera)
@@ -89,14 +95,14 @@ public class LoginActivity extends AppCompatActivity {
                     } else if (response.message() != null) {
                         errorMessage += ": " + response.code() + " " + response.message();
                     }
-                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    Toast.makeText(LogowanieActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                     Log.e(TAG, "Błąd logowania: " + response.code() + " " + response.message());
                 }
             }
 
             @Override
-            public void onFailure(Call<LogowanieResponse> call, Throwable t) {
-                Toast.makeText(LoginActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            public void onFailure(Call<LogowanieOdpowiedz> call, Throwable t) {
+                Toast.makeText(LogowanieActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 Log.e(TAG, "Błąd sieci onFailure", t);
             }
         });

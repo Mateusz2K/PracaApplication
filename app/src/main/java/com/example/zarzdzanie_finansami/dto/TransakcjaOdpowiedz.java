@@ -4,7 +4,7 @@ package com.example.zarzdzanie_finansami.dto;
 import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal;
 
-public class TransakcjaResponse {
+public class TransakcjaOdpowiedz {
 
     @SerializedName("id")
     private int id;
@@ -18,7 +18,7 @@ public class TransakcjaResponse {
     @SerializedName("data") // Format daty np. "yyyy-MM-dd" lub "yyyy-MM-dd'T'HH:mm:ss"
     private String data;
 
-    @SerializedName("typ") // Np. "WYDATEK", "PRZYCHÓD"
+    @SerializedName("typ") // Np. "KOSZT", "PRZYCHÓD"
     private String typ;
 
     @SerializedName("kategoria")

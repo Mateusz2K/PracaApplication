@@ -18,8 +18,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.KontoRequest; // Potrzebne DTO do wysyłania danych
-import com.example.zarzdzanie_finansami.dto.KontoResponse;
+import com.example.zarzdzanie_finansami.dto.KontoWysylanie; // Potrzebne DTO do wysyłania danych
+import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
 import com.example.zarzdzanie_finansami.network.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
 import com.example.zarzdzanie_finansami.ui.Adaptery.KontaAdapter;
@@ -39,7 +39,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
     private ApiSerwis apiService;
     private TokenMenadzer tokenManager;
     private KontaAdapter kontaAdapter;
-    private List<KontoResponse> kontoList = new ArrayList<>();
+    private List<KontoOdpowiedz> kontoList = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -90,10 +90,10 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             return;
         }
 
-        Call<List<KontoResponse>> call = apiService.getMojeKonta("Bearer " + token);
-        call.enqueue(new Callback<List<KontoResponse>>() {
+        Call<List<KontoOdpowiedz>> call = apiService.getMojeKonta("Bearer " + token);
+        call.enqueue(new Callback<List<KontoOdpowiedz>>() {
             @Override
-            public void onResponse(Call<List<KontoResponse>> call, Response<List<KontoResponse>> response) {
+            public void onResponse(Call<List<KontoOdpowiedz>> call, Response<List<KontoOdpowiedz>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     kontoList.clear();
                     kontoList.addAll(response.body());
@@ -111,7 +111,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             }
 
             @Override
-            public void onFailure(Call<List<KontoResponse>> call, Throwable t) {
+            public void onFailure(Call<List<KontoOdpowiedz>> call, Throwable t) {
                 Log.e(TAG, "Błąd sieci przy pobieraniu kont", t);
                 Toast.makeText(KontaActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
@@ -119,19 +119,19 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
     }
 
     @Override
-    public void onModifyKontoClicked(KontoResponse konto) {
+    public void onModifyKontoClicked(KontoOdpowiedz konto) {
         showModifyKontoDialog(konto);
     }
 
     @Override
-    public void onShowTransactionHistoryClicked(KontoResponse konto) {
+    public void onShowTransactionHistoryClicked(KontoOdpowiedz konto) {
         Intent intent = new Intent(this, TransakcjeActivity.class);
         intent.putExtra(TransakcjeActivity.EXTRA_KONTO_ID, konto.getId());
         startActivity(intent);
     }
 
     @Override
-    public void onDeleteKontoClicked(KontoResponse konto, int position) {
+    public void onDeleteKontoClicked(KontoOdpowiedz konto, int position) {
         String token = tokenManager.getAuthToken();
         if (token == null) {
             redirectToLogin();
@@ -168,7 +168,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
     }
 
 
-    private void showModifyKontoDialog(KontoResponse kontoToModify) {
+    private void showModifyKontoDialog(KontoOdpowiedz kontoToModify) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_modify_konto, null);
@@ -191,13 +191,13 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
                     }
 
                     // Utwórz obiekt żądania (KontoRequest)
-                    KontoRequest kontoRequest = new KontoRequest();
-                    kontoRequest.setNazwa(nowaNazwa);
-                    kontoRequest.setTyp(nowyTyp);
+                    KontoWysylanie kontoWysylanie = new KontoWysylanie();
+                    kontoWysylanie.setNazwa(nowaNazwa);
+                    kontoWysylanie.setTyp(nowyTyp);
                     // Ustaw inne pola, jeśli są modyfikowalne i istnieją w KontoRequest
                     // np. kontoRequest.setWaluta(kontoToModify.getWaluta()); // Jeśli waluta nie jest modyfikowalna, pomiń
 
-                    updateKontoOnServer(kontoToModify.getId(), kontoRequest);
+                    updateKontoOnServer(kontoToModify.getId(), kontoWysylanie);
                 })
                 .setNegativeButton("Anuluj", (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
@@ -229,21 +229,21 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
                         return;
                     }
 
-                    KontoRequest kontoRequest = new KontoRequest();
-                    kontoRequest.setNazwa(nazwa);
-                    kontoRequest.setTyp(typ);
+                    KontoWysylanie kontoWysylanie = new KontoWysylanie();
+                    kontoWysylanie.setNazwa(nazwa);
+                    kontoWysylanie.setTyp(typ);
                     // Ustaw inne wymagane pola dla nowego konta, np. walutę, bilans początkowy
                     // kontoRequest.setWaluta("PLN"); // Przykładowo
                     // kontoRequest.setBilans(BigDecimal.ZERO); // Przykładowo
 
-                    createKontoOnServer(kontoRequest);
+                    createKontoOnServer(kontoWysylanie);
                 })
                 .setNegativeButton("Anuluj", (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
-    private void createKontoOnServer(KontoRequest kontoRequest) {
+    private void createKontoOnServer(KontoWysylanie kontoWysylanie) {
         String token = tokenManager.getAuthToken();
         if (token == null) {
             redirectToLogin();
@@ -251,10 +251,10 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
         }
 
         // Założenie: W ApiSerwis masz metodę addKonto(token, kontoRequest)
-        Call<KontoResponse> call = apiService.addKonto("Bearer " + token, kontoRequest);
-        call.enqueue(new Callback<KontoResponse>() {
+        Call<KontoOdpowiedz> call = apiService.addKonto("Bearer " + token, kontoWysylanie);
+        call.enqueue(new Callback<KontoOdpowiedz>() {
             @Override
-            public void onResponse(Call<KontoResponse> call, Response<KontoResponse> response) {
+            public void onResponse(Call<KontoOdpowiedz> call, Response<KontoOdpowiedz> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Toast.makeText(KontaActivity.this, "Konto \"" + response.body().getNazwa() + "\" dodane pomyślnie", Toast.LENGTH_SHORT).show();
                     fetchKonta(); // Odśwież listę kont
@@ -270,7 +270,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             }
 
             @Override
-            public void onFailure(Call<KontoResponse> call, Throwable t) {
+            public void onFailure(Call<KontoOdpowiedz> call, Throwable t) {
                 Log.e(TAG, "Błąd sieci przy dodawaniu konta", t);
                 Toast.makeText(KontaActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
@@ -278,7 +278,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
     }
 
 
-    private void updateKontoOnServer(int kontoId, KontoRequest kontoRequest) {
+    private void updateKontoOnServer(int kontoId, KontoWysylanie kontoWysylanie) {
         String token = tokenManager.getAuthToken();
         if (token == null) {
             redirectToLogin();
@@ -286,10 +286,10 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
         }
 
         // Założenie: W ApiSerwis masz metodę updateKonto(token, kontoId, kontoRequest)
-        Call<KontoResponse> call = apiService.updateKonto("Bearer " + token, kontoId, kontoRequest);
-        call.enqueue(new Callback<KontoResponse>() {
+        Call<KontoOdpowiedz> call = apiService.updateKonto("Bearer " + token, kontoId, kontoWysylanie);
+        call.enqueue(new Callback<KontoOdpowiedz>() {
             @Override
-            public void onResponse(Call<KontoResponse> call, Response<KontoResponse> response) {
+            public void onResponse(Call<KontoOdpowiedz> call, Response<KontoOdpowiedz> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Toast.makeText(KontaActivity.this, "Konto zaktualizowane", Toast.LENGTH_SHORT).show();
                     // Zaktualizuj element na liście w adapterze
@@ -307,7 +307,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             }
 
             @Override
-            public void onFailure(Call<KontoResponse> call, Throwable t) {
+            public void onFailure(Call<KontoOdpowiedz> call, Throwable t) {
                 Log.e(TAG, "Błąd sieci przy aktualizacji konta", t);
                 Toast.makeText(KontaActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
@@ -320,7 +320,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
     }
 
     private void redirectToLogin() {
-        Intent intent = new Intent(KontaActivity.this, LoginActivity.class);
+        Intent intent = new Intent(KontaActivity.this, LogowanieActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

@@ -2,9 +2,9 @@ package com.example.zarzdzanie_finansami.dto;
 
 import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal; // Pamiętaj o imporcie
-import java.time.LocalDateTime; // Pamiętaj o imporcie (może wymagać dodatkowej konfiguracji dla Gson lub zmiany typu na String)
 
-public class KontoResponse {
+
+public class KontoOdpowiedz {
     @SerializedName("id")
     private int id;
 

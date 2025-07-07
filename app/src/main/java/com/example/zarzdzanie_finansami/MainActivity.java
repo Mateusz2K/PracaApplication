@@ -22,26 +22,26 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
-import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.KontoRequest;
-import com.example.zarzdzanie_finansami.dto.KontoResponse;
-import com.example.zarzdzanie_finansami.dto.TransakcjaResponse; // Będziesz potrzebował tego DTO
+import com.example.zarzdzanie_finansami.dto.KontoWysylanie;
+import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz;
 import com.example.zarzdzanie_finansami.network.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
-import com.example.zarzdzanie_finansami.ui.LoginActivity;
+import com.example.zarzdzanie_finansami.ui.DodajTransakcjeActivity; // Import nowej aktywności
+import com.example.zarzdzanie_finansami.ui.LogowanieActivity;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.formatter.ValueFormatter; // Zamiast IndexAxisValueFormatter dla nowszych wersji
-import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -57,6 +57,8 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "DashboardActivity";
+    public static final int ADD_TRANSACTION_REQUEST_CODE = 1;
+
 
     private Spinner spinnerKonta;
     private ImageButton buttonModifyKontoPopup;
@@ -69,9 +71,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ApiSerwis apiService;
     private TokenMenadzer tokenManager;
-    private List<KontoResponse> listaKont = new ArrayList<>();
-    private KontoResponse wybraneKonto;
-    private List<TransakcjaResponse> transakcjeDlaKonta = new ArrayList<>(); // Lista transakcji dla wybranego konta i okresu
+    private List<KontoOdpowiedz> listaKont = new ArrayList<>();
+    private KontoOdpowiedz wybraneKonto;
+    private List<TransakcjaOdpowiedz> transakcjeDlaKonta = new ArrayList<>();
 
     private NumberFormat currencyFormatter;
     private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -117,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void redirectToLogin() {
-        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+        Intent intent = new Intent(MainActivity.this, LogowanieActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
@@ -136,9 +138,8 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "Wybrano konto: " + wybraneKonto.getNazwa());
                     updateWidokDlaKonta();
                 } else if (listaKont.isEmpty() && position == 0 && parent.getItemAtPosition(position) != null) {
-                    // Obsługa przypadku, gdy jest tylko placeholder "Wybierz konto" lub "Brak kont"
                     wybraneKonto = null;
-                    updateWidokDlaKonta(); // Czyści widok lub pokazuje stan "brak konta"
+                    updateWidokDlaKonta();
                 }
             }
             @Override
@@ -153,36 +154,43 @@ public class MainActivity extends AppCompatActivity {
         String token = tokenManager.getAuthToken();
         if (token == null) return;
 
-        apiService.getMojeKonta("Bearer " + token).enqueue(new Callback<List<KontoResponse>>() {
+        apiService.getMojeKonta("Bearer " + token).enqueue(new Callback<List<KontoOdpowiedz>>() {
             @Override
-            public void onResponse(Call<List<KontoResponse>> call, Response<List<KontoResponse>> response) {
+            public void onResponse(Call<List<KontoOdpowiedz>> call, Response<List<KontoOdpowiedz>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     listaKont.clear();
                     listaKont.addAll(response.body());
-                    List<String> nazwyKont = listaKont.stream().map(KontoResponse::getNazwa).collect(Collectors.toList());
+                    List<String> nazwyKont = listaKont.stream().map(KontoOdpowiedz::getNazwa).collect(Collectors.toList());
                     ArrayAdapter<String> adapter = (ArrayAdapter<String>) spinnerKonta.getAdapter();
                     adapter.clear();
                     if (nazwyKont.isEmpty()){
                         adapter.add("Brak kont. Dodaj nowe.");
                         buttonModifyKontoPopup.setEnabled(false);
                         buttonDodajTransakcjeDoKonta.setEnabled(false);
+                        wybraneKonto = null; // Ustaw wybrane konto na null
+                        updateWidokDlaKonta(); // Zaktualizuj widok
                     } else {
                         adapter.addAll(nazwyKont);
                         buttonModifyKontoPopup.setEnabled(true);
                         buttonDodajTransakcjeDoKonta.setEnabled(true);
                         if (!listaKont.isEmpty()) {
-                            spinnerKonta.setSelection(0); // Automatycznie wybierz pierwsze konto
+                            spinnerKonta.setSelection(0);
                             wybraneKonto = listaKont.get(0);
-                            updateWidokDlaKonta();
+                            // updateWidokDlaKonta() zostanie wywołane przez onItemSelected listenera
                         }
                     }
                     adapter.notifyDataSetChanged();
+                    // Jeżeli lista kont nie jest pusta, onItemSelected listener zadba o updateWidokDlaKonta
+                    if (listaKont.isEmpty()) {
+                        updateWidokDlaKonta(); // Jeśli lista jest pusta, musimy ręcznie zaktualizować widok
+                    }
+
                 } else {
                     Toast.makeText(MainActivity.this, "Błąd pobierania kont: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
-            public void onFailure(Call<List<KontoResponse>> call, Throwable t) {
+            public void onFailure(Call<List<KontoOdpowiedz>> call, Throwable t) {
                 Toast.makeText(MainActivity.this, "Błąd sieci (konta): " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
@@ -191,16 +199,16 @@ public class MainActivity extends AppCompatActivity {
     private void updateWidokDlaKonta() {
         if (wybraneKonto != null) {
             textViewAktualnyBilansKonta.setText("Aktualny bilans: " + currencyFormatter.format(wybraneKonto.getBilans()));
-            // Po wybraniu konta, pobierz transakcje dla domyślnego okresu (np. Dziś)
             pobierzTransakcjeDlaOkresu();
         } else {
-            textViewAktualnyBilansKonta.setText("Wybierz konto");
+            textViewAktualnyBilansKonta.setText("Wybierz konto lub dodaj nowe");
             textViewPrzychodyOkres.setText(currencyFormatter.format(0));
             textViewKosztyOkres.setText(currencyFormatter.format(0));
             textViewBilansOkres.setText("Bilans za okres: " + currencyFormatter.format(0));
-            textViewBilansOkres.setTextColor(Color.BLACK); // Domyślny kolor
+            textViewBilansOkres.setTextColor(Color.BLACK);
             barChartFinanse.clear();
-            barChartFinanse.invalidate(); // Odśwież wykres
+            barChartFinanse.invalidate();
+            transakcjeDlaKonta.clear(); // Wyczyść listę transakcji
         }
     }
 
@@ -212,68 +220,51 @@ public class MainActivity extends AppCompatActivity {
 
     private void pobierzTransakcjeDlaOkresu() {
         if (wybraneKonto == null || !tokenManager.hasToken()) {
-            // Wyczyść poprzednie dane jeśli nie ma wybranego konta
             transakcjeDlaKonta.clear();
             updatePodsumowanieOkresu();
             setupBarChart();
             return;
         }
 
-        // Tutaj powinna być logika pobierania transakcji z API dla wybranego konta i okresu
-        // Na potrzeby przykładu, zakładam, że masz metodę w ApiSerwis:
-        // Call<List<TransakcjaResponse>> getTransakcjeKontaWgOkresu(String token, int kontoId, String startDate, String endDate);
-
         Calendar cal = Calendar.getInstance();
-        Date endDate = cal.getTime(); // Koniec to teraz
+        Date endDate = cal.getTime();
         Date startDate;
 
         int checkedChipId = chipGroupOkres.getCheckedChipId();
         if (checkedChipId == R.id.chipDzien) {
-            cal.set(Calendar.HOUR_OF_DAY, 0);
-            cal.set(Calendar.MINUTE, 0);
-            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
         } else if (checkedChipId == R.id.chipTydzien) {
-            cal.add(Calendar.DAY_OF_WEEK, - (cal.get(Calendar.DAY_OF_WEEK) - cal.getFirstDayOfWeek()));
-            cal.set(Calendar.HOUR_OF_DAY, 0); // Początek dnia
+            cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
+            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
         } else if (checkedChipId == R.id.chipMiesiac) {
             cal.set(Calendar.DAY_OF_MONTH, 1);
-            cal.set(Calendar.HOUR_OF_DAY, 0); // Początek dnia
+            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
         } else {
-            // Domyślnie np. dzisiaj lub brak - wyczyść dane
-            transakcjeDlaKonta.clear();
-            updatePodsumowanieOkresu();
-            setupBarChart();
-            return;
+            // Domyślnie dzisiaj, jeśli nic nie jest zaznaczone (lub błąd)
+            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
+            startDate = cal.getTime();
+            Log.w(TAG, "Nieznany Chip ID w chipGroupOkres, używam domyślnego 'Dziś'");
         }
         Log.d(TAG, "Wybrany okres: od " + dateFormatter.format(startDate) + " do " + dateFormatter.format(endDate));
 
-        // Przykład wywołania API (musisz dodać odpowiednią metodę do ApiSerwis.java)
-        // W rzeczywistości backend powinien sam agregować dane dla okresów.
-        // Pobieranie wszystkich transakcji i filtrowanie po stronie klienta jest nieefektywne dla dużych zbiorów.
-        // Na razie zasymulujemy, że pobieramy wszystkie i filtrujemy.
-        // Idealnie: apiService.getAggregatedDataForPeriod(token, wybraneKonto.getId(), odData, doData)
-        apiService.getTransakcjeDlaKonta("Bearer " + tokenManager.getAuthToken(), wybraneKonto.getId()).enqueue(new Callback<List<TransakcjaResponse>>() {
+        apiService.getTransakcjeDlaKonta("Bearer " + tokenManager.getAuthToken(), wybraneKonto.getId()).enqueue(new Callback<List<TransakcjaOdpowiedz>>() {
             @Override
-            public void onResponse(Call<List<TransakcjaResponse>> call, Response<List<TransakcjaResponse>> response) {
+            public void onResponse(Call<List<TransakcjaOdpowiedz>> call, Response<List<TransakcjaOdpowiedz>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Filtrowanie po stronie klienta (tymczasowe, do demonstracji)
+                    final Date finalStartDate = startDate; // Potrzebne dla lambdy
                     transakcjeDlaKonta = response.body().stream()
                             .filter(t -> {
                                 try {
-                                    Date dataTransakcji = dateFormatter.parse(t.getData()); // Założenie: getData() zwraca String yyyy-MM-dd
-                                    // Sprawdź, czy dataTransakcji jest po startDate i przed (lub równa) endDate.
-                                    // Trzeba być ostrożnym z porównywaniem dat, upewnij się, że endDate obejmuje cały dzień.
+                                    Date dataTransakcji = dateFormatter.parse(t.getData());
                                     Calendar endCal = Calendar.getInstance();
                                     endCal.setTime(endDate);
-                                    endCal.set(Calendar.HOUR_OF_DAY, 23);
-                                    endCal.set(Calendar.MINUTE, 59);
-                                    endCal.set(Calendar.SECOND, 59);
+                                    endCal.set(Calendar.HOUR_OF_DAY, 23); endCal.set(Calendar.MINUTE, 59); endCal.set(Calendar.SECOND, 59);
 
-                                    return !dataTransakcji.before(startDate) && !dataTransakcji.after(endCal.getTime());
-                                } catch (Exception e) {
+                                    return !dataTransakcji.before(finalStartDate) && !dataTransakcji.after(endCal.getTime());
+                                } catch (ParseException e) {
                                     Log.e(TAG, "Błąd parsowania daty transakcji: " + t.getData(), e);
                                     return false;
                                 }
@@ -282,14 +273,14 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "Przefiltrowano transakcji dla okresu: " + transakcjeDlaKonta.size());
                 } else {
                     transakcjeDlaKonta.clear();
-                    Toast.makeText(MainActivity.this, "Błąd pobierania transakcji dla okresu", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Błąd pobierania transakcji dla okresu: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
                 updatePodsumowanieOkresu();
                 setupBarChart();
             }
 
             @Override
-            public void onFailure(Call<List<TransakcjaResponse>> call, Throwable t) {
+            public void onFailure(Call<List<TransakcjaOdpowiedz>> call, Throwable t) {
                 transakcjeDlaKonta.clear();
                 updatePodsumowanieOkresu();
                 setupBarChart();
@@ -302,13 +293,12 @@ public class MainActivity extends AppCompatActivity {
         BigDecimal przychody = BigDecimal.ZERO;
         BigDecimal koszty = BigDecimal.ZERO;
 
-        for (TransakcjaResponse transakcja : transakcjeDlaKonta) {
+        for (TransakcjaOdpowiedz transakcja : transakcjeDlaKonta) {
             if (transakcja.getKwota() != null) {
-                // Założenie: "PRZYCHÓD" lub "WYDATEK" w transakcja.getTyp()
                 if ("PRZYCHOD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) {
                     przychody = przychody.add(transakcja.getKwota());
-                } else if ("WYDATEK".equalsIgnoreCase(transakcja.getTyp())) {
-                    koszty = koszty.add(transakcja.getKwota().abs()); // Koszty jako wartość dodatnia
+                } else if ("KOSZT".equalsIgnoreCase(transakcja.getTyp())) {
+                    koszty = koszty.add(transakcja.getKwota().abs());
                 }
             }
         }
@@ -320,54 +310,61 @@ public class MainActivity extends AppCompatActivity {
         textViewBilansOkres.setText("Bilans za okres: " + currencyFormatter.format(bilans));
 
         if (bilans.compareTo(BigDecimal.ZERO) >= 0) {
-            textViewBilansOkres.setTextColor(ContextCompat.getColor(this, R.color.green_profit)); // Definiuj w colors.xml
+            textViewBilansOkres.setTextColor(ContextCompat.getColor(this, R.color.green_profit));
         } else {
-            textViewBilansOkres.setTextColor(ContextCompat.getColor(this, R.color.red_loss)); // Definiuj w colors.xml
+            textViewBilansOkres.setTextColor(ContextCompat.getColor(this, R.color.red_loss));
         }
     }
 
     private void setupBarChart() {
         if (transakcjeDlaKonta == null || transakcjeDlaKonta.isEmpty()) {
             barChartFinanse.clear();
-            barChartFinanse.invalidate(); // Odśwież wykres, aby pokazać, że jest pusty
+            barChartFinanse.invalidate();
             return;
         }
 
         BigDecimal przychody = BigDecimal.ZERO;
         BigDecimal koszty = BigDecimal.ZERO;
 
-        for (TransakcjaResponse transakcja : transakcjeDlaKonta) {
+        for (TransakcjaOdpowiedz transakcja : transakcjeDlaKonta) {
             if (transakcja.getKwota() != null) {
-                if ("PRZYCHOD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) { //
-                    przychody = przychody.add(transakcja.getKwota()); //
-                } else if ("WYDATEK".equalsIgnoreCase(transakcja.getTyp())) { //
-                    koszty = koszty.add(transakcja.getKwota().abs()); //
+                if ("PRZYCHOD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) {
+                    przychody = przychody.add(transakcja.getKwota());
+                } else if ("KOSZT".equalsIgnoreCase(transakcja.getTyp())) {
+                    koszty = koszty.add(transakcja.getKwota().abs());
                 }
             }
         }
 
         ArrayList<BarEntry> entries = new ArrayList<>();
-        entries.add(new BarEntry(0, przychody.floatValue())); // Przychody
-        entries.add(new BarEntry(1, koszty.floatValue()));   // Koszty
+        entries.add(new BarEntry(0, przychody.floatValue()));
+        entries.add(new BarEntry(1, koszty.floatValue()));
 
         BarDataSet dataSet = new BarDataSet(entries, "Finanse w okresie");
-        dataSet.setColors(ColorTemplate.MATERIAL_COLORS); // Kolory słupków
+        dataSet.setColors(new int[]{ContextCompat.getColor(this, R.color.green_profit), ContextCompat.getColor(this, R.color.red_loss)});
         dataSet.setValueTextColor(Color.BLACK);
         dataSet.setValueTextSize(12f);
+        dataSet.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return currencyFormatter.format(value);
+            }
+        });
+
 
         BarData barData = new BarData(dataSet);
-        barData.setBarWidth(0.5f); // Szerokość słupków
+        barData.setBarWidth(0.5f);
 
         barChartFinanse.setData(barData);
-        barChartFinanse.getDescription().setEnabled(false); // Wyłącz opis wykresu
+        barChartFinanse.getDescription().setEnabled(false);
         barChartFinanse.setDrawGridBackground(false);
-        barChartFinanse.setFitBars(true); // Dopasuj słupki do szerokości
+        barChartFinanse.setFitBars(true);
 
         XAxis xAxis = barChartFinanse.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
-        xAxis.setGranularity(1f); // Odstęp między etykietami osi X
-        xAxis.setValueFormatter(new ValueFormatter() { // Zamiast IndexAxisValueFormatter
+        xAxis.setGranularity(1f);
+        xAxis.setValueFormatter(new ValueFormatter() {
             private final String[] labels = new String[]{"Przychody", "Koszty"};
             @Override
             public String getFormattedValue(float value) {
@@ -378,13 +375,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        barChartFinanse.getAxisLeft().setAxisMinimum(0f);
+        barChartFinanse.getAxisLeft().setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return currencyFormatter.format(value);
+            }
+        });
+        barChartFinanse.getAxisRight().setEnabled(false);
+        barChartFinanse.getLegend().setEnabled(false);
 
-        barChartFinanse.getAxisLeft().setAxisMinimum(0f); // Minimalna wartość osi Y
-        barChartFinanse.getAxisRight().setEnabled(false); // Wyłącz prawą oś Y
-        barChartFinanse.getLegend().setEnabled(false); // Wyłącz legendę
-
-        barChartFinanse.animateY(1000); // Animacja
-        barChartFinanse.invalidate(); // Odśwież wykres
+        barChartFinanse.animateY(1000);
+        barChartFinanse.invalidate();
     }
 
 
@@ -396,55 +398,82 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
-        // Możesz użyć tego samego layoutu co w KontaActivity lub stworzyć nowy
         View dialogView = inflater.inflate(R.layout.dialog_modify_konto, null);
         builder.setView(dialogView);
 
         EditText editTextNazwa = dialogView.findViewById(R.id.editTextModifyKontoNazwa);
         EditText editTextTyp = dialogView.findViewById(R.id.editTextModifyKontoTyp);
+        EditText editTextBilans = dialogView.findViewById(R.id.editTextModifyKontoBilans); // Nowe pole
 
         editTextNazwa.setText(wybraneKonto.getNazwa());
         editTextTyp.setText(wybraneKonto.getTyp());
+        // Możemy ustawić aktualny bilans jako placeholder lub pozostawić puste
+        // editTextBilans.setText(wybraneKonto.getBilans().toString());
+
 
         builder.setTitle("Modyfikuj Konto")
                 .setPositiveButton("Zapisz", (dialog, which) -> {
                     String nowaNazwa = editTextNazwa.getText().toString().trim();
                     String nowyTyp = editTextTyp.getText().toString().trim();
+                    String nowyBilansStr = editTextBilans.getText().toString().trim();
 
                     if (TextUtils.isEmpty(nowaNazwa) || TextUtils.isEmpty(nowyTyp)) {
                         Toast.makeText(this, "Nazwa i typ konta nie mogą być puste.", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    KontoRequest kontoRequest = new KontoRequest();
-                    kontoRequest.setNazwa(nowaNazwa);
-                    kontoRequest.setTyp(nowyTyp);
-                    // Ustaw inne pola, jeśli serwer na to pozwala (np. waluta)
-                    // kontoRequest.setWaluta(wybraneKonto.getWaluta());
+                    KontoWysylanie kontoWysylanie = new KontoWysylanie();
+                    kontoWysylanie.setNazwa(nowaNazwa);
+                    kontoWysylanie.setTyp(nowyTyp);
+                    kontoWysylanie.setWaluta(wybraneKonto.getWaluta()); // Zachowaj oryginalną walutę
 
-                    updateKontoOnServer(wybraneKonto.getId(), kontoRequest);
+                    if (!TextUtils.isEmpty(nowyBilansStr)) {
+                        try {
+                            BigDecimal nowyBilans = new BigDecimal(nowyBilansStr);
+                            kontoWysylanie.setBilans(nowyBilans);
+                        } catch (NumberFormatException e) {
+                            Toast.makeText(MainActivity.this, "Nieprawidłowy format bilansu.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                    } else {
+                        // Jeśli pole bilansu jest puste, nie wysyłamy go w requeście,
+                        // backend powinien zignorować aktualizację bilansu.
+                        // Alternatywnie, można wysłać oryginalny bilans, jeśli nie chcemy go zmieniać.
+                        // kontoRequest.setBilans(wybraneKonto.getBilans());
+                    }
+
+
+                    updateKontoOnServer(wybraneKonto.getId(), kontoWysylanie);
                 })
                 .setNegativeButton("Anuluj", (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
-    private void updateKontoOnServer(int kontoId, KontoRequest kontoRequest) {
+    private void updateKontoOnServer(int kontoId, KontoWysylanie kontoWysylanie) {
         String token = tokenManager.getAuthToken();
         if (token == null) return;
 
-        apiService.updateKonto("Bearer " + token, kontoId, kontoRequest).enqueue(new Callback<KontoResponse>() {
+        apiService.updateKonto("Bearer " + token, kontoId, kontoWysylanie).enqueue(new Callback<KontoOdpowiedz>() {
             @Override
-            public void onResponse(Call<KontoResponse> call, Response<KontoResponse> response) {
+            public void onResponse(Call<KontoOdpowiedz> call, Response<KontoOdpowiedz> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Toast.makeText(MainActivity.this, "Konto zaktualizowane", Toast.LENGTH_SHORT).show();
                     fetchKonta(); // Odśwież listę kont w spinnerze i dane
                 } else {
-                    Toast.makeText(MainActivity.this, "Błąd aktualizacji konta: " + response.code(), Toast.LENGTH_SHORT).show();
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Brak szczegółów";
+                        Log.e(TAG, "Błąd aktualizacji konta: " + response.code() + " - " + errorBody);
+                        Toast.makeText(MainActivity.this, "Błąd aktualizacji konta: " + response.code() + "\n" + errorBody, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Błąd parsowania error body", e);
+                        Toast.makeText(MainActivity.this, "Błąd aktualizacji konta: " + response.code(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
             @Override
-            public void onFailure(Call<KontoResponse> call, Throwable t) {
+            public void onFailure(Call<KontoOdpowiedz> call, Throwable t) {
+                Log.e(TAG, "Błąd sieci (aktualizacja konta): " + t.getMessage(), t);
                 Toast.makeText(MainActivity.this, "Błąd sieci (aktualizacja konta): " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
@@ -455,19 +484,36 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Wybierz konto, do którego chcesz dodać transakcję.", Toast.LENGTH_LONG).show();
             return;
         }
-        // TODO: Otwórz nową aktywność/dialog do dodawania transakcji, przekazując ID wybranego konta
-        // Intent intent = new Intent(this, AddTransactionActivity.class);
-        // intent.putExtra(AddTransactionActivity.EXTRA_KONTO_ID, wybraneKonto.getId());
-        // startActivity(intent);
-        Toast.makeText(this, "Przejście do dodawania transakcji dla konta: " + wybraneKonto.getNazwa(), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, DodajTransakcjeActivity.class);
+        intent.putExtra(DodajTransakcjeActivity.EXTRA_KONTO_ID, wybraneKonto.getId());
+        intent.putExtra(DodajTransakcjeActivity.EXTRA_KONTO_NAZWA, wybraneKonto.getNazwa());
+        startActivityForResult(intent, ADD_TRANSACTION_REQUEST_CODE); // Użyj startActivityForResult
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ADD_TRANSACTION_REQUEST_CODE && resultCode == RESULT_OK) {
+            // Transakcja została dodana, odśwież dane
+            Log.d(TAG, "Otrzymano wynik z AddTransactionActivity, odświeżam dane.");
+            fetchKonta(); // Ponowne pobranie kont zaktualizuje bilans
+            // pobierzTransakcjeDlaOkresu(); // Odświeży listę transakcji i wykres dla bieżącego okresu
+        }
+    }
+
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Odśwież dane po powrocie do aktywności
         if (tokenManager.hasToken()) {
-            fetchKonta(); // To zainicjuje też pobranie transakcji dla wybranego konta i okresu
+            if (tokenManager.isSessionExpired()) {
+                tokenManager.clearAuthToken();
+                Toast.makeText(this, "Sesja wygasła.", Toast.LENGTH_SHORT).show();
+                redirectToLogin(); // Twoja metoda przekierowująca do LoginActivity
+                return;
+            }
+            tokenManager.updateLastActiveTime();
+            fetchKonta();
         } else {
             redirectToLogin();
         }

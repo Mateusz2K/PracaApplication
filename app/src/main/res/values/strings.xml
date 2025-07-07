@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Zarządzanie_Finansami</string>
+
+    <string-array name="typy_transakcji">
+        <item>Koszt</item>
+        <item>Przychód</item>
+    </string-array>
 </resources>

@@ -3,7 +3,7 @@ package com.example.zarzdzanie_finansami.dto;
 import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal;
 
-public class KontoRequest {
+public class KontoWysylanie {
 
     @SerializedName("nazwa")
     private String nazwa;

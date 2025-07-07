@@ -8,25 +8,24 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
-import com.example.zarzdzanie_finansami.dto.TransakcjaResponse; // Upewnij się, że ta klasa istnieje i ma pola
+import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz; // Upewnij się, że ta klasa istnieje i ma pola
 import java.util.List;
-import java.math.BigDecimal; // Dla kwoty
 import java.text.NumberFormat; // Do formatowania kwoty
 import java.util.Locale; // Do formatowania kwoty
 
 public class TransakcjeAdapter extends RecyclerView.Adapter<TransakcjeAdapter.TransactionViewHolder> {
 
-    private List<TransakcjaResponse> transactionList;
+    private List<TransakcjaOdpowiedz> transactionList;
     private OnTransactionListener onTransactionListener;
     private NumberFormat currencyFormatter;
 
 
     public interface OnTransactionListener {
-        void onModifyClick(TransakcjaResponse transakcja);
+        void onModifyClick(TransakcjaOdpowiedz transakcja);
         void onDeleteClick(int transakcjaId, int position);
     }
 
-    public TransakcjeAdapter(List<TransakcjaResponse> transactionList, OnTransactionListener onTransactionListener) {
+    public TransakcjeAdapter(List<TransakcjaOdpowiedz> transactionList, OnTransactionListener onTransactionListener) {
         this.transactionList = transactionList;
         this.onTransactionListener = onTransactionListener;
         // Inicjalizuj formatter waluty, możesz dostosować Locale
@@ -43,7 +42,7 @@ public class TransakcjeAdapter extends RecyclerView.Adapter<TransakcjeAdapter.Tr
 
     @Override
     public void onBindViewHolder(@NonNull TransactionViewHolder holder, int position) {
-        TransakcjaResponse currentTransaction = transactionList.get(position);
+        TransakcjaOdpowiedz currentTransaction = transactionList.get(position);
 
         holder.description.setText(currentTransaction.getOpis()); // Założenie: TransakcjaResponse ma getOpis()
 
@@ -71,7 +70,7 @@ public class TransakcjeAdapter extends RecyclerView.Adapter<TransakcjeAdapter.Tr
         return transactionList == null ? 0 : transactionList.size();
     }
 
-    public void setTransactions(List<TransakcjaResponse> transactions) {
+    public void setTransactions(List<TransakcjaOdpowiedz> transactions) {
         this.transactionList = transactions;
         notifyDataSetChanged(); // Lub użyj DiffUtil dla lepszej wydajności
     }

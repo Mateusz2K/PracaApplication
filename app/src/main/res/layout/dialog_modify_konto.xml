@@ -40,4 +40,18 @@
             android:inputType="textCapWords" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_marginBottom="8dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextModifyKontoBilans"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nowy bilans (opcjonalnie)"
+            android:inputType="numberDecimal" />
+    </com.google.android.material.textfield.TextInputLayout>
+
 </LinearLayout>

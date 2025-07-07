@@ -1,19 +1,21 @@
 package com.example.zarzdzanie_finansami.dto;
 
-public class TransakcjaRequest {
+import java.math.BigDecimal;
+
+public class TransakcjaWysylanie {
     private String opis;
-    private double kwota;
+    private BigDecimal kwota;
     private String data;
     private String typ;
-    private String kategoria;
+    private Integer kategoriaId;
     private int kontoId;
 
-    public TransakcjaRequest(String opis, double kwota, String data, String typ, String kategoria, int kontoId) {
+    public TransakcjaWysylanie(String opis, BigDecimal kwota, String data, String typ, Integer kategoriaId, int kontoId) {
         this.opis = opis;
         this.kwota = kwota;
         this.data = data;
         this.typ = typ;
-        this.kategoria = kategoria;
+        this.kategoriaId = kategoriaId;
         this.kontoId = kontoId;
     }
 
@@ -25,11 +27,11 @@ public class TransakcjaRequest {
         this.opis = opis;
     }
 
-    public double getKwota() {
+    public BigDecimal getKwota() {
         return kwota;
     }
 
-    public void setKwota(double kwota) {
+    public void setKwota(BigDecimal kwota) {
         this.kwota = kwota;
     }
 
@@ -49,12 +51,12 @@ public class TransakcjaRequest {
         this.typ = typ;
     }
 
-    public String getKategoria() {
-        return kategoria;
+    public Integer getKategoriaId() {
+        return kategoriaId;
     }
 
-    public void setKategoria(String kategoria) {
-        this.kategoria = kategoria;
+    public void setKategoriaId(Integer kategoriaId) {
+        this.kategoriaId = kategoriaId;
     }
 
     public int getKontoId() {
