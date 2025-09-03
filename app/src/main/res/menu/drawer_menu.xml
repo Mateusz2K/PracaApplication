@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_dashboard"
+            android:icon="@drawable/home_icn"
+            android:title="Panel Główny" />
+        <item
+            android:id="@+id/nav_konta"
+            android:icon="@drawable/account_icn"
+            android:title="Konta" />
+        <item
+            android:id="@+id/nav_budzet"
+            android:icon="@drawable/chart_icn"
+            android:title="Budżet" />
+        <item
+            android:id="@+id/nav_kategorie"
+            android:icon="@drawable/category_icn"
+            android:title="Kategorie" />
+        <item
+            android:id="@+id/nav_cele"
+            android:icon="@drawable/ic_target"
+            android:title="Moje Cele" />
+        <item
+            android:id="@+id/nav_settings"
+            android:title="Ustawienia" />
+    </group>
+</menu>
+    <!--            android:icon="@drawable/settings_icn" -->

@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
-import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz; // Upewnij się, że ta klasa istnieje i ma pola
+import com.example.zarzdzanie_finansami.dto.transakcja.TransakcjaOdpowiedz; // Upewnij się, że ta klasa istnieje i ma pola
 import java.util.List;
 import java.text.NumberFormat; // Do formatowania kwoty
 import java.util.Locale; // Do formatowania kwoty

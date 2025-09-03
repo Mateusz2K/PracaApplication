@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ui.DodajBudzetActivity"> <!-- tools:context może być zmieniony na .ui.EdytujBudzetActivity w zależności od tego, gdzie go edytujesz -->
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"> <!-- Możesz dostosować theme -->
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar_form_budzet"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" /> <!-- Możesz dostosować popupTheme -->
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"> <!-- Zwiększono margines dla lepszego odstępu -->
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editTextBudzetNazwa"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nazwa budżetu"
+                    android:inputType="textCapSentences"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"> <!-- Zmieniono z 4dp na 8dp dla większego odstępu -->
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextDataPoczatkowa"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Data początkowa"
+                        android:focusable="false"
+                        android:clickable="true" /> <!-- Dodano clickable=true dla jasności interakcji -->
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"> <!-- Zmieniono z 4dp na 8dp dla większego odstępu -->
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextDataKoncowa"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Data końcowa"
+                        android:focusable="false"
+                        android:clickable="true" /> <!-- Dodano clickable=true -->
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"> <!-- Zmieniono marginTop na marginBottom -->
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editTextPrzewidywanyDochod"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Przewidywany dochód"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Typ reguły budżetowej"
+                android:textAppearance="?attr/textAppearanceSubtitle1"
+                android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerTypReguly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:background="@drawable/background_item_pozycja_budzetu" />
+
+
+            <!-- Ukryte layouty dla reguł - bez zmian, ich widoczność jest kontrolowana z kodu -->
+            <LinearLayout
+                android:id="@+id/layoutRegulaProcentowa"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="8dp">
+                <!-- Tutaj dodaj pola dla reguły procentowej -->
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutRegulaKwotowa"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="8dp">
+                <!-- Tutaj dodaj pola dla reguły kwotowej -->
+            </LinearLayout>
+
+
+            <Button
+                android:id="@+id/buttonSaveBudzet"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp"
+            android:text="Zapisz Budżet"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

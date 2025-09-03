@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,9 +13,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.zarzdzanie_finansami.MainActivity;
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.LogowanieWysylanie;
-import com.example.zarzdzanie_finansami.dto.LogowanieOdpowiedz;
-import com.example.zarzdzanie_finansami.network.ApiSerwis;
+import com.example.zarzdzanie_finansami.dto.logowanie.LogowanieWysylanie;
+import com.example.zarzdzanie_finansami.dto.logowanie.LogowanieOdpowiedz;
+import com.example.zarzdzanie_finansami.network.api.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
 
 import org.jetbrains.annotations.Nullable;
@@ -31,6 +32,7 @@ public class LogowanieActivity extends AppCompatActivity {
     private ApiSerwis apiService;
     private TokenMenadzer tokenManager;
     private static final String TAG = "LoginActivity";
+    private TextView textViewRegisterLink;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,8 +42,9 @@ public class LogowanieActivity extends AppCompatActivity {
         editTextUsername = findViewById(R.id.editTextUsername);
         editTextPassword = findViewById(R.id.editTextPassword);
         buttonLogin = findViewById(R.id.buttonLogin);
+        textViewRegisterLink = findViewById(R.id.textViewRegisterLink);
 
-        apiService = RetrofitKlient.getClient().create(ApiSerwis.class);
+        apiService = RetrofitKlient.getClient(this).create(ApiSerwis.class);
         tokenManager = new TokenMenadzer(this); // Inicjalizacja tokenManagera
 
         // Sprawdź, czy sesja wygasła PRZED sprawdzeniem, czy token istnieje
@@ -58,6 +61,11 @@ public class LogowanieActivity extends AppCompatActivity {
         }
 
         buttonLogin.setOnClickListener(v -> loginUser());
+        textViewRegisterLink.setOnClickListener(v -> {
+            Intent intent = new Intent(LogowanieActivity.this, RejestracjaActivity.class);
+            startActivity(intent);
+            // Nie kończ LogowanieActivity, aby użytkownik mógł wrócić, jeśli zrezygnuje z rejestracji
+        });
     }
 
     private void loginUser() {
@@ -70,7 +78,7 @@ public class LogowanieActivity extends AppCompatActivity {
         }
 
         LogowanieWysylanie loginRequest = new LogowanieWysylanie(username, password);
-        Call<LogowanieOdpowiedz> call = apiService.loginUser(loginRequest);
+        Call<LogowanieOdpowiedz> call = apiService.logowanieUzytkownika(loginRequest);
 
         call.enqueue(new Callback<LogowanieOdpowiedz>() {
             @Override

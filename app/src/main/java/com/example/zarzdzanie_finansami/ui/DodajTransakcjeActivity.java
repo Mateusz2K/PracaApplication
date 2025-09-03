@@ -17,14 +17,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.FragmentResultListener;
 
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.KategoriaOdpowiedz;
-import com.example.zarzdzanie_finansami.dto.TransakcjaWysylanie;
-import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz;
-import com.example.zarzdzanie_finansami.network.ApiSerwis;
+import com.example.zarzdzanie_finansami.dto.kategoria.KategoriaOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.transakcja.TransakcjaWysylanie;
+import com.example.zarzdzanie_finansami.dto.transakcja.TransakcjaOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.transakcja.TypTransakcjiEnum;
+import com.example.zarzdzanie_finansami.network.api.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
+import com.example.zarzdzanie_finansami.ui.Adaptery.DataKalendarzFragment;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.math.BigDecimal;
@@ -43,6 +46,7 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
     private static final String TAG = "AddTransactionActivity";
     public static final String EXTRA_KONTO_ID = "extra_konto_id";
     public static final String EXTRA_KONTO_NAZWA = "extra_konto_nazwa";
+    private static final String DIALOG_DATE_TAG = "DIALOG_DATE_PICKER";
 
     private TextInputEditText editTextOpis, editTextKwota, editTextData;
     private Spinner spinnerTyp, spinnerKategoria;
@@ -54,10 +58,10 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
     private int kontoId;
     private String kontoNazwa;
     private Calendar calendar;
-    private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+    private final SimpleDateFormat dateFormatter = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
-    private List<KategoriaOdpowiedz> wszystkieKategorie = new ArrayList<>(); // Przechowuje wszystkie pobrane kategorie
-    private List<KategoriaOdpowiedz> filtrowaneKategorie = new ArrayList<>(); // Kategorie po przefiltrowaniu
+    private final List<KategoriaOdpowiedz> wszystkieKategorie = new ArrayList<>(); // Przechowuje wszystkie pobrane kategorie
+    private final List<KategoriaOdpowiedz> filtrowaneKategorie = new ArrayList<>(); // Kategorie po przefiltrowaniu
     private ArrayAdapter<KategoriaOdpowiedz> kategorieAdapter;
     private KategoriaOdpowiedz wybranaKategoria;
 
@@ -75,7 +79,7 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
         }
 
         tokenManager = new TokenMenadzer(this);
-        apiService = RetrofitKlient.getClient().create(ApiSerwis.class);
+        apiService = RetrofitKlient.getClient(this).create(ApiSerwis.class);
         calendar = Calendar.getInstance();
 
         kontoId = getIntent().getIntExtra(EXTRA_KONTO_ID, -1);
@@ -113,6 +117,62 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
             fetchKategorie();
         } else {
             Toast.makeText(this, "Brak autoryzacji.", Toast.LENGTH_SHORT).show();
+        }
+        getSupportFragmentManager().setFragmentResultListener(
+                DataKalendarzFragment.REQUEST_KEY_DATE_PICKER, this,
+                new FragmentResultListener(){
+                    @Override
+                    public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle result) {
+                        if (DataKalendarzFragment.REQUEST_KEY_DATE_PICKER.equals(requestKey)) {
+                            String selectedDateString = result.getString(DataKalendarzFragment.RESULT_KEY_SELECTED_DATE_STRING);
+                            int year = result.getInt(DataKalendarzFragment.RESULT_KEY_SELECTED_YEAR);
+                            int month = result.getInt(DataKalendarzFragment.RESULT_KEY_SELECTED_MONTH); // 0-11
+                            int day = result.getInt(DataKalendarzFragment.RESULT_KEY_SELECTED_DAY);
+
+                            if (editTextData != null) {
+                                editTextData.setText(selectedDateString);
+                            }
+                            Log.d("TwojaAktywnosc", "Wybrano datę: " + selectedDateString + " (R:" + year + ", M:" + (month + 1) + ", D:" + day + ")");
+                            // Tutaj możesz zrobić coś więcej z wybraną datą
+                        }
+                    }
+                }
+        );
+        if(editTextData != null) {
+            editTextData.setOnClickListener(v -> {
+                editTextData.setOnClickListener(v1 -> showDatePickerDialog());
+                // Ustaw focusable na false, aby klawiatura się nie pojawiała
+                editTextData.setFocusable(false);
+                editTextData.setClickable(true); // Upewnij się, że jest klikalne
+            });
+        }
+    }
+    private void showDatePickerDialog() {
+        // Sprawdź, czy dialog już nie jest wyświetlany, aby uniknąć duplikatów
+        if (getSupportFragmentManager().findFragmentByTag(DIALOG_DATE_TAG) == null) {
+            DataKalendarzFragment datePicker;
+
+            // Spróbuj pobrać aktualną datę z pola, aby ustawić ją jako początkową w kalendarzu
+            String currentDateString = editTextData != null ? editTextData.getText().toString() : "";
+            if (!currentDateString.isEmpty()) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(sdf.parse(currentDateString));
+                    datePicker = DataKalendarzFragment.newInstance(
+                            cal.get(Calendar.YEAR),
+                            cal.get(Calendar.MONTH),
+                            cal.get(Calendar.DAY_OF_MONTH)
+                    );
+                } catch (Exception e) {
+                    Log.w("TwojaAktywnosc", "Nie udało się sparsować daty z pola do inicjalizacji kalendarza.", e);
+                    datePicker = DataKalendarzFragment.newInstance(); // Użyj domyślnej (dzisiejszej)
+                }
+            } else {
+                datePicker = DataKalendarzFragment.newInstance(); // Użyj domyślnej (dzisiejszej)
+            }
+
+            datePicker.show(getSupportFragmentManager(), DIALOG_DATE_TAG);
         }
     }
 
@@ -165,12 +225,12 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
     }
 
     private void filtrujKategoriePoTypie(String typTransakcjiSpinner) {
-        // Konwertuj wartość ze spinnera ("Koszt", "Przychód") na wartość oczekiwaną przez API/DTO ("KOSZT", "PRZYCHOD")
-        String typApi;
+        // Konwertuj wartość ze spinnera ("Koszt", "Przychód") na wartość oczekiwaną przez API/DTO ("KOSZT", "PRZYCHÓD")
+        TypTransakcjiEnum typApi;
         if (typTransakcjiSpinner.equalsIgnoreCase("Koszt")) {
-            typApi = "KOSZT"; // Upewnij się, że te wartości są zgodne z tym, co jest w KategoriaResponse.typTransakcji
+            typApi = TypTransakcjiEnum.KOSZT; // Upewnij się, że te wartości są zgodne z tym, co jest w KategoriaResponse.typTransakcji
         } else if (typTransakcjiSpinner.equalsIgnoreCase("Przychód")) {
-            typApi = "PRZYCHOD"; // lub "PRZYCHÓD"
+            typApi =TypTransakcjiEnum.PRZYCHÓD; // lub "PRZYCHÓD"
         } else {
             typApi = null; // Nieznany typ, nie filtruj lub obsłuż inaczej
         }
@@ -179,7 +239,7 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
         if (typApi != null) {
             for (KategoriaOdpowiedz kategoria : wszystkieKategorie) {
                 // Porównujemy typ z KategoriaResponse z typem wybranym w spinnerze
-                if (typApi.equalsIgnoreCase(kategoria.getTypTransakcji())) {
+                if (typApi.equals(kategoria.getTypTransakcji())) {
                     filtrowaneKategorie.add(kategoria);
                 }
             }
@@ -286,11 +346,11 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
             return;
         }
 
-        String apiTyp = "";
+        TypTransakcjiEnum apiTyp = null;
         if (typTransakcjiSpinner.equalsIgnoreCase("Koszt")) {
-            apiTyp = "KOSZT";
+            apiTyp = TypTransakcjiEnum.KOSZT;
         } else if (typTransakcjiSpinner.equalsIgnoreCase("Przychód")) {
-            apiTyp = "PRZYCHOD"; // lub "PRZYCHÓD"
+            apiTyp = TypTransakcjiEnum.PRZYCHÓD;
         }
 
         TransakcjaWysylanie transakcjaWysylanie = new TransakcjaWysylanie(opis, kwota, data, apiTyp, kategoriaIdDoWyslania, kontoId);
@@ -301,12 +361,12 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
             return;
         }
 
-        apiService.dodajTransakcje("Bearer " + token, kontoId, transakcjaWysylanie).enqueue(new Callback<TransakcjaOdpowiedz>() {
+        apiService.dodajTransakcje("Bearer " + token, transakcjaWysylanie).enqueue(new Callback<TransakcjaOdpowiedz>() {
             @Override
             public void onResponse(Call<TransakcjaOdpowiedz> call, Response<TransakcjaOdpowiedz> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Toast.makeText(DodajTransakcjeActivity.this, "Transakcja dodana pomyślnie!", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
+                    setResult(AppCompatActivity.RESULT_OK);
                     finish();
                 } else {
                     try {
@@ -326,6 +386,12 @@ public class DodajTransakcjeActivity extends AppCompatActivity {
                 Toast.makeText(DodajTransakcjeActivity.this, "Błąd sieci: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        setResult(AppCompatActivity.RESULT_CANCELED);
+        super.onBackPressed();
     }
 
     @Override

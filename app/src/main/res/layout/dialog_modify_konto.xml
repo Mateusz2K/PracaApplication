@@ -32,12 +32,12 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="8dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editTextModifyKontoTyp"
+        <Spinner
+            android:id="@+id/spinnerKontoTyp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Typ konta (np. Bieżące, Oszczędnościowe)"
-            android:inputType="textCapWords" />
+            android:layout_height="64dp"
+            android:layout_weight="1" />
+
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout

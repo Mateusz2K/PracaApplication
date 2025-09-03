@@ -1,4 +1,4 @@
-package com.example.zarzdzanie_finansami.dto;
+package com.example.zarzdzanie_finansami.dto.konto;
 
 import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal; // Pamiętaj o imporcie
@@ -17,8 +17,6 @@ public class KontoOdpowiedz {
     @SerializedName("typ")
     private String typ;
 
-    @SerializedName("waluta")
-    private String waluta;
 
     // Dla LocalDateTime z Gson mogą być potrzebne TypeAdaptery.
     // Dla uproszczenia można odebrać jako String i parsować ręcznie
@@ -37,12 +35,11 @@ public class KontoOdpowiedz {
     public String getNazwa() { return nazwa; }
     public BigDecimal getBilans() { return bilans; }
     public String getTyp() { return typ; }
-    public String getWaluta() { return waluta; }
     public String getDataUtworzenia() { return dataUtworzenia; } // Jeśli jako String
     public Integer getUzytkownikId() { return uzytkownikId; }
 
     @Override
     public String toString() { // Przydatne do wyświetlania w ListView/RecyclerView
-        return "Konto: " + nazwa + ", Bilans: " + bilans + " " + waluta;
+        return "Konto: " + nazwa + ", Bilans: " + bilans;
     }
 }

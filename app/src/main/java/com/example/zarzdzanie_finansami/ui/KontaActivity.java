@@ -6,10 +6,13 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.example.zarzdzanie_finansami.ui.TransakcjeActivity;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,9 +21,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.KontoWysylanie; // Potrzebne DTO do wysyłania danych
-import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
-import com.example.zarzdzanie_finansami.network.ApiSerwis;
+import com.example.zarzdzanie_finansami.dto.konto.KontoWysylanie; // Potrzebne DTO do wysyłania danych
+import com.example.zarzdzanie_finansami.dto.konto.KontoOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.konto.TypKontaEnum;
+import com.example.zarzdzanie_finansami.network.api.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
 import com.example.zarzdzanie_finansami.ui.Adaptery.KontaAdapter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -50,6 +54,9 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Moje Konta");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+
         }
 
         recyclerViewKonta = findViewById(R.id.recyclerViewKonta);
@@ -57,7 +64,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
         fabAddKonto = findViewById(R.id.fabAddKonto);
 
         tokenManager = new TokenMenadzer(this);
-        apiService = RetrofitKlient.getClient().create(ApiSerwis.class);
+        apiService = RetrofitKlient.getClient(this).create(ApiSerwis.class);
 
         setupRecyclerView();
 
@@ -90,7 +97,7 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             return;
         }
 
-        Call<List<KontoOdpowiedz>> call = apiService.getMojeKonta("Bearer " + token);
+        Call<List<KontoOdpowiedz>> call = apiService.przeslijMojeKonta("Bearer " + token);
         call.enqueue(new Callback<List<KontoOdpowiedz>>() {
             @Override
             public void onResponse(Call<List<KontoOdpowiedz>> call, Response<List<KontoOdpowiedz>> response) {
@@ -142,8 +149,8 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
                 .setTitle("Usuń Konto")
                 .setMessage("Czy na pewno chcesz usunąć konto \"" + konto.getNazwa() + "\"? Spowoduje to również usunięcie wszystkich powiązanych transakcji.")
                 .setPositiveButton("Usuń", (dialog, which) -> {
-                    // Założenie: W ApiSerwis masz metodę deleteKonto(token, kontoId)
-                    Call<Void> call = apiService.deleteKonto("Bearer " + token, konto.getId());
+                    // Założenie: W ApiSerwis masz metodę usunKonto(token, kontoId)
+                    Call<Void> call = apiService.usunKonto("Bearer " + token, konto.getId());
                     call.enqueue(new Callback<Void>() {
                         @Override
                         public void onResponse(Call<Void> call, Response<Void> response) {
@@ -175,15 +182,22 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
         builder.setView(dialogView);
 
         EditText editTextNazwa = dialogView.findViewById(R.id.editTextModifyKontoNazwa);
-        EditText editTextTyp = dialogView.findViewById(R.id.editTextModifyKontoTyp);
+        Spinner spinnerTyp = dialogView.findViewById(R.id.spinnerKontoTyp);
+        ArrayList<String> typyKonta = new ArrayList<>();
+        for (TypKontaEnum typ : TypKontaEnum.values()) {
+            typyKonta.add(typ.name());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, typyKonta);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTyp.setAdapter(adapter);
+        spinnerTyp.setSelection(0);
 
-        editTextNazwa.setText(kontoToModify.getNazwa());
-        editTextTyp.setText(kontoToModify.getTyp());
+
 
         builder.setTitle("Modyfikuj Konto")
                 .setPositiveButton("Zapisz", (dialog, which) -> {
                     String nowaNazwa = editTextNazwa.getText().toString().trim();
-                    String nowyTyp = editTextTyp.getText().toString().trim();
+                    String nowyTyp = spinnerTyp.getSelectedItem().toString().trim();
 
                     if (TextUtils.isEmpty(nowaNazwa) || TextUtils.isEmpty(nowyTyp)) {
                         Toast.makeText(this, "Nazwa i typ konta nie mogą być puste.", Toast.LENGTH_SHORT).show();
@@ -212,17 +226,22 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
         builder.setView(dialogView);
 
         EditText editTextNazwa = dialogView.findViewById(R.id.editTextModifyKontoNazwa);
-        EditText editTextTyp = dialogView.findViewById(R.id.editTextModifyKontoTyp);
-        // Można dodać pole na bilans początkowy i walutę, jeśli serwer to obsługuje przy tworzeniu
-
+        Spinner spinnerTyp = dialogView.findViewById(R.id.spinnerKontoTyp);
+        ArrayList<String> typyKonta = new ArrayList<>();
+        for (TypKontaEnum typ : TypKontaEnum.values()) {
+            typyKonta.add(typ.name());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, typyKonta);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTyp.setAdapter(adapter);
+        spinnerTyp.setSelection(0); // Domyślny typ konta
         editTextNazwa.setHint("Nazwa nowego konta");
-        editTextTyp.setHint("Typ nowego konta");
 
 
         builder.setTitle("Dodaj Nowe Konto")
                 .setPositiveButton("Dodaj", (dialog, which) -> {
                     String nazwa = editTextNazwa.getText().toString().trim();
-                    String typ = editTextTyp.getText().toString().trim();
+                    String typ = spinnerTyp.getSelectedItem().toString().trim();
 
                     if (TextUtils.isEmpty(nazwa) || TextUtils.isEmpty(typ)) {
                         Toast.makeText(this, "Nazwa i typ konta są wymagane.", Toast.LENGTH_SHORT).show();
@@ -250,8 +269,8 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             return;
         }
 
-        // Założenie: W ApiSerwis masz metodę addKonto(token, kontoRequest)
-        Call<KontoOdpowiedz> call = apiService.addKonto("Bearer " + token, kontoWysylanie);
+        // Założenie: W ApiSerwis masz metodę dodajKonto(token, kontoRequest)
+        Call<KontoOdpowiedz> call = apiService.dodajKonto("Bearer " + token, kontoWysylanie);
         call.enqueue(new Callback<KontoOdpowiedz>() {
             @Override
             public void onResponse(Call<KontoOdpowiedz> call, Response<KontoOdpowiedz> response) {
@@ -285,8 +304,8 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
             return;
         }
 
-        // Założenie: W ApiSerwis masz metodę updateKonto(token, kontoId, kontoRequest)
-        Call<KontoOdpowiedz> call = apiService.updateKonto("Bearer " + token, kontoId, kontoWysylanie);
+        // Założenie: W ApiSerwis masz metodę zmienKonto(token, kontoId, kontoRequest)
+        Call<KontoOdpowiedz> call = apiService.zmienKonto("Bearer " + token, kontoId, kontoWysylanie);
         call.enqueue(new Callback<KontoOdpowiedz>() {
             @Override
             public void onResponse(Call<KontoOdpowiedz> call, Response<KontoOdpowiedz> response) {
@@ -329,9 +348,20 @@ public class KontaActivity extends AppCompatActivity implements KontaAdapter.OnK
     protected void onResume() {
         super.onResume();
         if (tokenManager.hasToken()) {
-            fetchKonta(); // Odśwież listę kont po powrocie do aktywności
+            if (tokenManager.isSessionExpired()) {
+                tokenManager.clearAuthToken();
+                redirectToLogin(); // Twoja metoda przekierowująca do LoginActivity
+                return;
+            }
+            tokenManager.updateLastActiveTime();
+            fetchKonta();
         } else {
             redirectToLogin();
         }
+    }
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed(); // Domyślne zachowanie to powrót do poprzedniej aktywności na stosie
+        return true; // Zwróć true, aby zasygnalizować, że zdarzenie zostało obsłużone
     }
 }

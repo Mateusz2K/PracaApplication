@@ -10,7 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zarzdzanie_finansami.R;
-import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.konto.KontoOdpowiedz;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -55,12 +55,12 @@ public class KontaAdapter extends RecyclerView.Adapter<KontaAdapter.KontoViewHol
         // Formatowanie bilansu
         if (currentKonto.getBilans() != null) {
             // Ustaw walutę dynamicznie, jeśli jest dostępna, inaczej domyślna
-            String waluta = currentKonto.getWaluta() != null ? currentKonto.getWaluta() : "PLN";
+            String waluta = "PLN";
             // Chociaż NumberFormat.getCurrencyInstance() używa symbolu waluty z Locale,
             // możemy chcieć jawnie pokazać kod waluty, jeśli się różni od domyślnego Locale.
             // Na razie formatter użyje symbolu dla PLN.
             String formattedBilans = currencyFormatter.format(currentKonto.getBilans());
-            holder.textViewKontoBilans.setText("Bilans: " + formattedBilans + (waluta.equals("PLN") ? "" : " " + waluta) );
+            holder.textViewKontoBilans.setText("Bilans: " + formattedBilans + " " + waluta );
         } else {
             holder.textViewKontoBilans.setText("Bilans: Brak danych");
         }

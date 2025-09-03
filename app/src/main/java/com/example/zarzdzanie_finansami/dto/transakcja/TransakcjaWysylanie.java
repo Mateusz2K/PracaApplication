@@ -1,4 +1,4 @@
-package com.example.zarzdzanie_finansami.dto;
+package com.example.zarzdzanie_finansami.dto.transakcja;
 
 import java.math.BigDecimal;
 
@@ -6,11 +6,12 @@ public class TransakcjaWysylanie {
     private String opis;
     private BigDecimal kwota;
     private String data;
-    private String typ;
+    private TypTransakcjiEnum typ;
     private Integer kategoriaId;
     private int kontoId;
+    //TODO: sprawdzić przesyłanie danych
 
-    public TransakcjaWysylanie(String opis, BigDecimal kwota, String data, String typ, Integer kategoriaId, int kontoId) {
+    public TransakcjaWysylanie(String opis, BigDecimal kwota, String data, TypTransakcjiEnum typ, Integer kategoriaId, int kontoId) {
         this.opis = opis;
         this.kwota = kwota;
         this.data = data;
@@ -43,11 +44,11 @@ public class TransakcjaWysylanie {
         this.data = data;
     }
 
-    public String getTyp() {
+    public TypTransakcjiEnum getTyp() {
         return typ;
     }
 
-    public void setTyp(String typ) {
+    public void setTyp(TypTransakcjiEnum typ) {
         this.typ = typ;
     }
 

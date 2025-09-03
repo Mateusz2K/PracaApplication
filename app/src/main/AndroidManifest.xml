@@ -2,23 +2,41 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name" android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/account_icn"
+        android:label="@string/app_name" android:roundIcon="@drawable/account_icn"
         android:supportsRtl="true"
         android:theme="@style/Theme.Zarządzanie_Finansami" android:usesCleartextTraffic="true"  tools:targetApi="31">
 
+        <activity
+            android:name=".ui.CeleActivity"
+            android:label="Moje Cele"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
         <activity
             android:name=".ui.LogowanieActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.RejestracjaActivity"
+            android:exported="false"
+            android:label="Rejestracja"
+            android:parentActivityName=".ui.LogowanieActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ui.LogowanieActivity" />
         </activity>
 
         <activity
@@ -33,9 +51,38 @@
             android:exported="false"/>
 
         <activity
-            android:name=".ui.DodajTransakcjeActivity"
+            android:name=".ui.BudzetActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+
+
+        <activity android:name=".ui.SzczegolyBudzetuActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.BudzetActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ui.BudzetActivity" />
+        </activity>
+
+        <activity
+            android:name=".ui.DodajTransakcjeActivity"
+            android:exported="false"
+            android:label="Dodaj Transakcję"
+            android:parentActivityName=".MainActivity"> <!-- Możesz ustawić MainActivity jako rodzica, jeśli to ma sens w nawigacji -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+        <activity
+            android:name=".ui.KategorieActivity"
+            android:exported="false"
+            android:label="Kategorie"
+            android:parentActivityName=".MainActivity"> <!-- Możesz ustawić MainActivity jako rodzica, jeśli to ma sens w nawigacji -->
+
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />

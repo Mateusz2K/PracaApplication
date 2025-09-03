@@ -1,4 +1,4 @@
-package com.example.zarzdzanie_finansami.dto;
+package com.example.zarzdzanie_finansami.dto.transakcja;
 
 
 import com.google.gson.annotations.SerializedName;
@@ -21,8 +21,8 @@ public class TransakcjaOdpowiedz {
     @SerializedName("typ") // Np. "KOSZT", "PRZYCHÓD"
     private String typ;
 
-    @SerializedName("kategoria")
-    private String kategoria; // Opcjonalnie
+    @SerializedName("kategoriaId")
+    private int kategoriaId;
 
     @SerializedName("kontoId")
     private int kontoId;
@@ -68,12 +68,12 @@ public class TransakcjaOdpowiedz {
         this.typ = typ;
     }
 
-    public String getKategoria() {
-        return kategoria;
+    public int getKategoria() {
+        return kategoriaId;
     }
 
-    public void setKategoria(String kategoria) {
-        this.kategoria = kategoria;
+    public void setKategoria(int kategoria) {
+        this.kategoriaId = kategoria;
     }
 
     public int getKontoId() {
@@ -93,7 +93,7 @@ public class TransakcjaOdpowiedz {
                 ", kwota=" + kwota +
                 ", data='" + data + '\'' +
                 ", typ='" + typ + '\'' +
-                ", kategoria='" + kategoria + '\'' +
+                ", kategoria='" + kategoriaId + '\'' +
                 ", kontoId=" + kontoId +
                 '}';
     }

@@ -1,8 +1,15 @@
 <resources>
-    <string name="app_name">Zarządzanie_Finansami</string>
+    <string name="app_name">Zarządzanie Finansami</string>
 
     <string-array name="typy_transakcji">
         <item>Koszt</item>
         <item>Przychód</item>
     </string-array>
+    <string name="navigation_drawer_open">Otwórz menu nawigacyjne</string>
+    <string name="navigation_drawer_close">Zamknij menu nawigacyjne</string>
+    <string name="error_field_required">To pole jest wymagane</string>
+    <string name="error_invalid_username_length">Nazwa użytkownika musi mieć co najmniej 3 znaki</string>
+    <string name="error_invalid_email">Nieprawidłowy adres e-mail</string>
+    <string name="error_invalid_password_length">Hasło musi mieć co najmniej 6 znaków</string>
+    <string name="error_password_mismatch">Hasła nie są takie same</string>
 </resources>

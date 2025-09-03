@@ -1,7 +1,11 @@
-package com.example.zarzdzanie_finansami.dto;
+package com.example.zarzdzanie_finansami.dto.kategoria;
 
 import androidx.annotation.NonNull;
+
+import com.example.zarzdzanie_finansami.dto.transakcja.TypTransakcjiEnum;
 import com.google.gson.annotations.SerializedName;
+
+import java.util.Objects;
 
 public class KategoriaOdpowiedz {
 
@@ -12,12 +16,12 @@ public class KategoriaOdpowiedz {
     private String nazwa;
 
     // Zakładam, że serwer zwraca pole "typTransakcji" lub podobne,
-    // które mapuje się na wartości "KOSZT" lub "PRZYCHOD" (lub inne z Twojego TypTransakcjiEnum)
+    // które mapuje się na wartości "KOSZT" lub "PRZYCHÓD" (lub inne z Twojego TypTransakcjiEnum)
     @SerializedName("typTransakcji") // Użyj tej nazwy, jeśli tak zwraca serwer
-    private String typTransakcji; // Zmieniona nazwa pola
+    private TypTransakcjiEnum typTransakcji; // Zmieniona nazwa pola
 
     // Konstruktor, Gettery, Settery
-    public KategoriaOdpowiedz(int id, String nazwa, String typTransakcji) {
+    public KategoriaOdpowiedz(int id, String nazwa, TypTransakcjiEnum typTransakcji) {
         this.id = id;
         this.nazwa = nazwa;
         this.typTransakcji = typTransakcji;
@@ -39,11 +43,11 @@ public class KategoriaOdpowiedz {
         this.nazwa = nazwa;
     }
 
-    public String getTypTransakcji() { // Zmieniona nazwa metody
+    public TypTransakcjiEnum getTypTransakcji() { // Zmieniona nazwa metody
         return typTransakcji;
     }
 
-    public void setTypTransakcji(String typTransakcji) { // Zmieniona nazwa metody
+    public void setTypTransakcji(TypTransakcjiEnum typTransakcji) { // Zmieniona nazwa metody
         this.typTransakcji = typTransakcji;
     }
 
@@ -59,8 +63,8 @@ public class KategoriaOdpowiedz {
         if (o == null || getClass() != o.getClass()) return false;
         KategoriaOdpowiedz that = (KategoriaOdpowiedz) o;
         return id == that.id &&
-                (nazwa != null ? nazwa.equals(that.nazwa) : that.nazwa == null) &&
-                (typTransakcji != null ? typTransakcji.equals(that.typTransakcji) : that.typTransakcji == null);
+                (Objects.equals(nazwa, that.nazwa)) &&
+                (Objects.equals(typTransakcji, that.typTransakcji));
     }
 
     @Override

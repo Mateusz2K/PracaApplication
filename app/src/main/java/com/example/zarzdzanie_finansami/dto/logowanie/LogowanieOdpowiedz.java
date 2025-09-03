@@ -1,4 +1,4 @@
-package com.example.zarzdzanie_finansami.dto;
+package com.example.zarzdzanie_finansami.dto.logowanie;
 
 import com.google.gson.annotations.SerializedName;
 

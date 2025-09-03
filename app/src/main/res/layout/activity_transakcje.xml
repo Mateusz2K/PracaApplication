@@ -7,6 +7,7 @@
     tools:context=".ui.TransakcjeActivity">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:theme="@style/Theme.Zarządzanie_Finansami">
@@ -20,29 +21,39 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:padding="16dp">
 
         <Button
-            android:id="@+id/buttonLogoutTransakcje"
+            android:id="@+id/buttonPokazFiltry"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Wyloguj"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginBottom="8dp"/>
+            android:text="Pokaż Filtry"
+            android:layout_gravity="end"
+            android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="8dp"
+        android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/textViewAktywneFiltry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aktywne filtry: Brak"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"/> <!-- Pokaż, gdy filtry są aktywne -->
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewTransactions"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/buttonLogoutTransakcje"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             tools:listitem="@layout/list_item_transakcje" />
 
-    </RelativeLayout>
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddTransaction"

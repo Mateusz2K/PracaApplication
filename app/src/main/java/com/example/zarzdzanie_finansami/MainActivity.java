@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -16,19 +17,31 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.zarzdzanie_finansami.autoryzacja.TokenMenadzer;
-import com.example.zarzdzanie_finansami.dto.KontoWysylanie;
-import com.example.zarzdzanie_finansami.dto.KontoOdpowiedz;
-import com.example.zarzdzanie_finansami.dto.TransakcjaOdpowiedz;
-import com.example.zarzdzanie_finansami.network.ApiSerwis;
+import com.example.zarzdzanie_finansami.dto.konto.KontoWysylanie;
+import com.example.zarzdzanie_finansami.dto.konto.KontoOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.konto.TypKontaEnum;
+import com.example.zarzdzanie_finansami.dto.transakcja.TransakcjaOdpowiedz;
+import com.example.zarzdzanie_finansami.dto.transakcja.TransakcjaPobieranieDTO;
+import com.example.zarzdzanie_finansami.network.api.ApiSerwis;
 import com.example.zarzdzanie_finansami.network.RetrofitKlient;
+import com.example.zarzdzanie_finansami.ui.BudzetActivity;
+import com.example.zarzdzanie_finansami.ui.CeleActivity;
 import com.example.zarzdzanie_finansami.ui.DodajTransakcjeActivity; // Import nowej aktywności
+import com.example.zarzdzanie_finansami.ui.KategorieActivity;
+import com.example.zarzdzanie_finansami.ui.KontaActivity;
 import com.example.zarzdzanie_finansami.ui.LogowanieActivity;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -38,12 +51,14 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.navigation.NavigationView;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -54,10 +69,10 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener  {
 
     private static final String TAG = "DashboardActivity";
-    public static final int ADD_TRANSACTION_REQUEST_CODE = 1;
+    private ActivityResultLauncher<Intent> addTransactionLauncher;
 
 
     private Spinner spinnerKonta;
@@ -68,6 +83,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView textViewPrzychodyOkres, textViewKosztyOkres, textViewBilansOkres;
     private BarChart barChartFinanse;
     private Button buttonDodajTransakcjeDoKonta;
+    private DrawerLayout drawerLayout;
+    private ActionBarDrawerToggle toggle;
+    private NavigationView navigationView;
 
     private ApiSerwis apiService;
     private TokenMenadzer tokenManager;
@@ -76,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
     private List<TransakcjaOdpowiedz> transakcjeDlaKonta = new ArrayList<>();
 
     private NumberFormat currencyFormatter;
-    private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+    private SimpleDateFormat dateFormatter = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
 
     @Override
@@ -86,6 +104,18 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar_dashboard);
         setSupportActionBar(toolbar);
+
+        // Inicjalizacja menu
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+
+        // Ustawienie listenera dla menu
+        navigationView.setNavigationItemSelectedListener(this);
+
+        // Konfiguracja "hamburgera" do otwierania menu
+        toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
 
         currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("pl", "PL"));
 
@@ -103,7 +133,24 @@ public class MainActivity extends AppCompatActivity {
         buttonDodajTransakcjeDoKonta = findViewById(R.id.buttonDodajTransakcjeDoKonta);
 
         tokenManager = new TokenMenadzer(this);
-        apiService = RetrofitKlient.getClient().create(ApiSerwis.class);
+        apiService = RetrofitKlient.getClient(this).create(ApiSerwis.class);
+        addTransactionLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                (ActivityResult result) -> {
+                    if (result.getResultCode() == AppCompatActivity.RESULT_OK) {
+                        // Transakcja została dodana (lub inna akcja zakończona sukcesem)
+                        // Intent data = result.getData(); // Możesz pobrać dane zwrócone przez DodajTransakcjeActivity, jeśli są
+                        Log.d(TAG, "Otrzymano RESULT_OK z DodajTransakcjeActivity, odświeżam dane.");
+                        fetchKonta(); // Ponowne pobranie kont zaktualizuje bilans
+                        // Możesz też od razu wywołać pobierzTransakcjeDlaOkresu(), jeśli chcesz natychmiast odświeżyć listę i wykres
+                        // pobierzTransakcjeDlaOkresu();
+                    } else if (result.getResultCode() == AppCompatActivity.RESULT_CANCELED) {
+                        // Użytkownik anulował operację w DodajTransakcjeActivity
+                        Log.d(TAG, "Otrzymano RESULT_CANCELED z DodajTransakcjeActivity.");
+                        // Możesz tu nic nie robić lub wyświetlić stosowny komunikat
+                    }
+                    // Możesz obsłużyć inne kody wyników, jeśli DodajTransakcjeActivity je ustawia
+                });
 
         if (!tokenManager.hasToken()) {
             redirectToLogin();
@@ -116,6 +163,12 @@ public class MainActivity extends AppCompatActivity {
         buttonDodajTransakcjeDoKonta.setOnClickListener(v -> dodajTransakcje());
 
         fetchKonta();
+    }
+
+    private void logoutUser() {
+        tokenManager.clearAuthToken();
+        Toast.makeText(this, "Sesja wygasła. Zaloguj się ponownie.", Toast.LENGTH_LONG).show();
+        redirectToLogin();
     }
 
     private void redirectToLogin() {
@@ -154,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
         String token = tokenManager.getAuthToken();
         if (token == null) return;
 
-        apiService.getMojeKonta("Bearer " + token).enqueue(new Callback<List<KontoOdpowiedz>>() {
+        apiService.przeslijMojeKonta("Bearer " + token).enqueue(new Callback<List<KontoOdpowiedz>>() {
             @Override
             public void onResponse(Call<List<KontoOdpowiedz>> call, Response<List<KontoOdpowiedz>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -221,16 +274,20 @@ public class MainActivity extends AppCompatActivity {
     private void pobierzTransakcjeDlaOkresu() {
         if (wybraneKonto == null || !tokenManager.hasToken()) {
             transakcjeDlaKonta.clear();
-            updatePodsumowanieOkresu();
-            setupBarChart();
+            updatePodsumowanieOkresu(); // Aktualizuje UI na podstawie pustej listy
+            setupBarChart();            // Aktualizuje wykres na podstawie pustej listy
             return;
         }
 
+        TransakcjaPobieranieDTO kryteria = new TransakcjaPobieranieDTO();
+        kryteria.setKontoId(wybraneKonto.getId()); // Ustaw ID wybranego konta
+
         Calendar cal = Calendar.getInstance();
-        Date endDate = cal.getTime();
+        Date endDate = cal.getTime(); // Domyślnie dzisiaj jako data końcowa
         Date startDate;
 
         int checkedChipId = chipGroupOkres.getCheckedChipId();
+
         if (checkedChipId == R.id.chipDzien) {
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
@@ -243,50 +300,58 @@ public class MainActivity extends AppCompatActivity {
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
         } else {
-            // Domyślnie dzisiaj, jeśli nic nie jest zaznaczone (lub błąd)
+            // Domyślnie dzisiaj, jeśli nic nie jest zaznaczone (lub błąd) - LUB możesz chcieć wysłać null dla dat, aby pobrać wszystkie
+            // Na potrzeby tego przykładu, załóżmy, że zawsze chcemy jakiś okres, więc domyślnie "Dziś"
+            ((Chip)findViewById(R.id.chipDzien)).setChecked(true); // Ustaw "Dziś" jako domyślny, jeśli nic nie wybrano
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
-            Log.w(TAG, "Nieznany Chip ID w chipGroupOkres, używam domyślnego 'Dziś'");
+            Log.w(TAG, "Nieznany lub brak Chip ID w chipGroupOkres, używam domyślnego 'Dziś'");
         }
-        Log.d(TAG, "Wybrany okres: od " + dateFormatter.format(startDate) + " do " + dateFormatter.format(endDate));
 
-        apiService.getTransakcjeDlaKonta("Bearer " + tokenManager.getAuthToken(), wybraneKonto.getId()).enqueue(new Callback<List<TransakcjaOdpowiedz>>() {
-            @Override
-            public void onResponse(Call<List<TransakcjaOdpowiedz>> call, Response<List<TransakcjaOdpowiedz>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    final Date finalStartDate = startDate; // Potrzebne dla lambdy
-                    transakcjeDlaKonta = response.body().stream()
-                            .filter(t -> {
-                                try {
-                                    Date dataTransakcji = dateFormatter.parse(t.getData());
-                                    Calendar endCal = Calendar.getInstance();
-                                    endCal.setTime(endDate);
-                                    endCal.set(Calendar.HOUR_OF_DAY, 23); endCal.set(Calendar.MINUTE, 59); endCal.set(Calendar.SECOND, 59);
+        // Ustaw daty w DTO
+        kryteria.setDataOd(dateFormatter.format(startDate));
+        // Dla "Dzień", "Tydzień", "Miesiąc" dataDo może być bieżącym dniem do końca
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endDate); // Użyj oryginalnego 'endDate'
+        endCal.set(Calendar.HOUR_OF_DAY, 23); endCal.set(Calendar.MINUTE, 59); endCal.set(Calendar.SECOND, 59);
+        kryteria.setDataDo(dateFormatter.format(endCal.getTime()));
 
-                                    return !dataTransakcji.before(finalStartDate) && !dataTransakcji.after(endCal.getTime());
-                                } catch (ParseException e) {
-                                    Log.e(TAG, "Błąd parsowania daty transakcji: " + t.getData(), e);
-                                    return false;
+        Log.d(TAG, "Wysyłanie kryteriów do API: KontoID=" + kryteria.getKontoId() +
+                ", DataOd=" + kryteria.getDataOd() + ", DataDo=" + kryteria.getDataDo());
+
+        apiService.pobierzTransakcjeDynamicznie("Bearer " + tokenManager.getAuthToken(), kryteria)
+                .enqueue(new Callback<List<TransakcjaOdpowiedz>>() {
+                    @Override
+                    public void onResponse(Call<List<TransakcjaOdpowiedz>> call, Response<List<TransakcjaOdpowiedz>> response) {
+                        transakcjeDlaKonta.clear(); // Zawsze czyść przed dodaniem nowych
+                        if (response.isSuccessful() && response.body() != null) {
+                            // Serwer już przefiltrował transakcje, więc po prostu je przypisujemy
+                            transakcjeDlaKonta.addAll(response.body());
+                            Log.d(TAG, "Pobrano transakcji z serwera: " + transakcjeDlaKonta.size());
+                        } else {
+                            Log.e(TAG, "Błąd pobierania transakcji dla okresu: " + response.code() + " - " + response.message());
+                            try {
+                                if(response.errorBody() != null) {
+                                    Log.e(TAG, "Error body: " + response.errorBody().string());
                                 }
-                            })
-                            .collect(Collectors.toList());
-                    Log.d(TAG, "Przefiltrowano transakcji dla okresu: " + transakcjeDlaKonta.size());
-                } else {
-                    transakcjeDlaKonta.clear();
-                    Toast.makeText(MainActivity.this, "Błąd pobierania transakcji dla okresu: " + response.code(), Toast.LENGTH_SHORT).show();
-                }
-                updatePodsumowanieOkresu();
-                setupBarChart();
-            }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Błąd parsowania error body", e);
+                            }
+                            Toast.makeText(MainActivity.this, "Błąd pobierania transakcji: " + response.code(), Toast.LENGTH_SHORT).show();
+                        }
+                        updatePodsumowanieOkresu();
+                        setupBarChart();
+                    }
 
-            @Override
-            public void onFailure(Call<List<TransakcjaOdpowiedz>> call, Throwable t) {
-                transakcjeDlaKonta.clear();
-                updatePodsumowanieOkresu();
-                setupBarChart();
-                Toast.makeText(MainActivity.this, "Błąd sieci (transakcje): " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                    @Override
+                    public void onFailure(Call<List<TransakcjaOdpowiedz>> call, Throwable t) {
+                        transakcjeDlaKonta.clear();
+                        updatePodsumowanieOkresu();
+                        setupBarChart();
+                        Log.e(TAG, "Błąd sieci (transakcje): " + t.getMessage(), t);
+                        Toast.makeText(MainActivity.this, "Błąd sieci (transakcje): " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void updatePodsumowanieOkresu() {
@@ -295,7 +360,7 @@ public class MainActivity extends AppCompatActivity {
 
         for (TransakcjaOdpowiedz transakcja : transakcjeDlaKonta) {
             if (transakcja.getKwota() != null) {
-                if ("PRZYCHOD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) {
+                if ("PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) {
                     przychody = przychody.add(transakcja.getKwota());
                 } else if ("KOSZT".equalsIgnoreCase(transakcja.getTyp())) {
                     koszty = koszty.add(transakcja.getKwota().abs());
@@ -328,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
 
         for (TransakcjaOdpowiedz transakcja : transakcjeDlaKonta) {
             if (transakcja.getKwota() != null) {
-                if ("PRZYCHOD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) {
+                if ("PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp()) || "PRZYCHÓD".equalsIgnoreCase(transakcja.getTyp())) {
                     przychody = przychody.add(transakcja.getKwota());
                 } else if ("KOSZT".equalsIgnoreCase(transakcja.getTyp())) {
                     koszty = koszty.add(transakcja.getKwota().abs());
@@ -402,11 +467,15 @@ public class MainActivity extends AppCompatActivity {
         builder.setView(dialogView);
 
         EditText editTextNazwa = dialogView.findViewById(R.id.editTextModifyKontoNazwa);
-        EditText editTextTyp = dialogView.findViewById(R.id.editTextModifyKontoTyp);
+        Spinner spinnerTypKonta = dialogView.findViewById(R.id.spinnerKontoTyp);
         EditText editTextBilans = dialogView.findViewById(R.id.editTextModifyKontoBilans); // Nowe pole
 
         editTextNazwa.setText(wybraneKonto.getNazwa());
-        editTextTyp.setText(wybraneKonto.getTyp());
+        List<String> typyKonta = Arrays.stream(TypKontaEnum.values()).map(Enum::name).collect(Collectors.toList());
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, typyKonta);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTypKonta.setAdapter(adapter);
+        spinnerTypKonta.setSelection(adapter.getPosition(wybraneKonto.getTyp()));
         // Możemy ustawić aktualny bilans jako placeholder lub pozostawić puste
         // editTextBilans.setText(wybraneKonto.getBilans().toString());
 
@@ -414,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
         builder.setTitle("Modyfikuj Konto")
                 .setPositiveButton("Zapisz", (dialog, which) -> {
                     String nowaNazwa = editTextNazwa.getText().toString().trim();
-                    String nowyTyp = editTextTyp.getText().toString().trim();
+                    String nowyTyp = spinnerTypKonta.getSelectedItem().toString().trim();
                     String nowyBilansStr = editTextBilans.getText().toString().trim();
 
                     if (TextUtils.isEmpty(nowaNazwa) || TextUtils.isEmpty(nowyTyp)) {
@@ -425,7 +494,6 @@ public class MainActivity extends AppCompatActivity {
                     KontoWysylanie kontoWysylanie = new KontoWysylanie();
                     kontoWysylanie.setNazwa(nowaNazwa);
                     kontoWysylanie.setTyp(nowyTyp);
-                    kontoWysylanie.setWaluta(wybraneKonto.getWaluta()); // Zachowaj oryginalną walutę
 
                     if (!TextUtils.isEmpty(nowyBilansStr)) {
                         try {
@@ -454,7 +522,7 @@ public class MainActivity extends AppCompatActivity {
         String token = tokenManager.getAuthToken();
         if (token == null) return;
 
-        apiService.updateKonto("Bearer " + token, kontoId, kontoWysylanie).enqueue(new Callback<KontoOdpowiedz>() {
+        apiService.zmienKonto("Bearer " + token, kontoId, kontoWysylanie).enqueue(new Callback<KontoOdpowiedz>() {
             @Override
             public void onResponse(Call<KontoOdpowiedz> call, Response<KontoOdpowiedz> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -487,19 +555,19 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, DodajTransakcjeActivity.class);
         intent.putExtra(DodajTransakcjeActivity.EXTRA_KONTO_ID, wybraneKonto.getId());
         intent.putExtra(DodajTransakcjeActivity.EXTRA_KONTO_NAZWA, wybraneKonto.getNazwa());
-        startActivityForResult(intent, ADD_TRANSACTION_REQUEST_CODE); // Użyj startActivityForResult
+        addTransactionLauncher.launch(intent);
     }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ADD_TRANSACTION_REQUEST_CODE && resultCode == RESULT_OK) {
-            // Transakcja została dodana, odśwież dane
-            Log.d(TAG, "Otrzymano wynik z AddTransactionActivity, odświeżam dane.");
-            fetchKonta(); // Ponowne pobranie kont zaktualizuje bilans
-            // pobierzTransakcjeDlaOkresu(); // Odświeży listę transakcji i wykres dla bieżącego okresu
-        }
-    }
+//      usuniety przez activityResultLauncher
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        if (requestCode == ADD_TRANSACTION_REQUEST_CODE && resultCode == RESULT_OK) {
+//            // Transakcja została dodana, odśwież dane
+//            Log.d(TAG, "Otrzymano wynik z AddTransactionActivity, odświeżam dane.");
+//            fetchKonta(); // Ponowne pobranie kont zaktualizuje bilans
+//            // pobierzTransakcjeDlaOkresu(); // Odświeży listę transakcji i wykres dla bieżącego okresu
+//        }
+//    }
 
 
     @Override
@@ -508,7 +576,6 @@ public class MainActivity extends AppCompatActivity {
         if (tokenManager.hasToken()) {
             if (tokenManager.isSessionExpired()) {
                 tokenManager.clearAuthToken();
-                Toast.makeText(this, "Sesja wygasła.", Toast.LENGTH_SHORT).show();
                 redirectToLogin(); // Twoja metoda przekierowująca do LoginActivity
                 return;
             }
@@ -518,4 +585,35 @@ public class MainActivity extends AppCompatActivity {
             redirectToLogin();
         }
     }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.nav_dashboard) {
+            // Jesteśmy już tutaj, więc nic nie robimy
+        } else if (id == R.id.nav_konta) {
+            startActivity(new Intent(MainActivity.this, KontaActivity.class));
+        } else if (id == R.id.nav_budzet) {
+            startActivity(new Intent(MainActivity.this, BudzetActivity.class));
+        } else if (id == R.id.nav_kategorie) {
+            startActivity(new Intent(MainActivity.this, KategorieActivity.class));
+        }
+        else if (id == R.id.nav_cele) {
+            startActivity(new Intent(MainActivity.this, CeleActivity.class));
+        }
+
+        // Zamknij menu po kliknięciu
+        drawerLayout.closeDrawers();
+        return true;
+    }
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
+            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
+    //TODO: dodać przycisk wylogowania
 }
